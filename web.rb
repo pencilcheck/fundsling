@@ -152,7 +152,8 @@ class FundslingApp < Sinatra::Base
         case notification
         when Google4R::Checkout::NewOrderNotification
 
-            Order.find_by(notification_serial_number: notification.serial_number) do |order|
+            Order.find_by(
+                    notification_serial_number: notification.serial_number) do |order|
                 order.order_summary = OrderSummary.new(
                     google_order_number: notification.google_order_number,
                     buyer_billing_address: notification.buyer_billing_address,
@@ -167,10 +168,12 @@ class FundslingApp < Sinatra::Base
 
         when Google4R::Checkout::OrderStateChangeNotification
 
-            Order.find_by(notification_serial_number: notification.serial_number) do |order|
+            Order.find_by(
+                    notification_serial_number: notification.serial_number) do |order|
                 order.order_summary.financial_order_state = notification.new_finantial_order_state
                 order.save
-                if notification.new_finantial_order_state == Google4R::Checkout::FinancialOrderState::CANCELLED
+                if notification.new_finantial_order_state == 
+                        Google4R::Checkout::FinancialOrderState::CANCELLED
                     order.delete
                     $number_of_pepsi -= 1
                 end
@@ -178,9 +181,11 @@ class FundslingApp < Sinatra::Base
 
         when Google4R::Checkout::AuthorizationAmountNotification 
 
-            Order.find_by(notification_serial_number: notification.serial_number) do |order|
+            Order.find_by(
+                    notification_serial_number: notification.serial_number) do |order|
                 order.authorization_amount = notification.authorization_amount
-                order.authorization_expiration_date = notification.authorization_expiration_date
+                order.authorization_expiration_date = 
+                    notification.authorization_expiration_date
                 order.save
             end
 
