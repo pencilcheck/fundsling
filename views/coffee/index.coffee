@@ -14,7 +14,7 @@ poll = ->
             if data[0] == 0
                 $('#motivation-speech').text('put yourself first in line!')
             else if data[0] < 4
-                $('#motivation-speech').text('keep it on, join the force!')
+                $('#motivation-speech').text('join the line right now!')
             else if data[0] < 9
                 $('#motivation-speech').text('we are so close, only need a few more')
             else if data[0] == 10
