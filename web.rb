@@ -123,7 +123,7 @@ class FundslingApp < Sinatra::Base
     end
 
     get '/number' do
-        JSON.dump [$number_of_pepsi]
+        JSON.dump [$number_of_pepsi, $limit_of_pepsi - $number_of_pepsi]
     end
 
     post '/handler' do

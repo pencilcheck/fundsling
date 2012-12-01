@@ -11,6 +11,7 @@ poll = ->
             data = JSON.parse(data)
             console.log data
             $('#number-of-pepsi').text(data[0])
+            $('#leftovers-of-pepsi').text(data[1])
             if data[0] == 0
                 $('#motivation-speech').text('put yourself first in line!')
             else if data[0] < 4
