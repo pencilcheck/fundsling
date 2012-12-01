@@ -116,6 +116,7 @@ class FundslingApp < Sinatra::Base
         order.product = $pepsi_product
         order.save
 =end
+        $number_of_pepsi += 1
 
 
         # Redirect the user to Google Checkout to complete the transaction
@@ -145,7 +146,6 @@ class FundslingApp < Sinatra::Base
                 $number_of_pepsi += 1
             end
 =end
-            $number_of_pepsi += 1
 
             # ready to charge :)
             if $number_of_pepsi == $limit_of_pepsi
