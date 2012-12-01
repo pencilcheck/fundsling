@@ -3,8 +3,9 @@ require 'slim'
 require 'sass'
 require 'coffee-script'
 require 'google4r/checkout'
-require 'couchrest'
-require 'couchrest_extended_document'
+require 'mongo'
+require 'mongoid'
+require 'mongoid_money_field'
 
 require './test/frontend_configuration'
 require './taxtablefactory'
@@ -14,36 +15,46 @@ $stdout.sync = true
 $frontend = Google4R::Checkout::Frontend.new(FRONTEND_CONFIGURATION)
 $frontend.tax_table_factory = TaxTableFactory.new
 
-SERVER = CouchRest.new( "#{ENV['CLOUDANT_URL']}:5984" )
-$order_db = SERVER.database( "orders" )
+Mongoid.load!("config/mongoid.yml")
 
-class Order < CouchRest::ExtendedDocument
+class Order
+    include Mongoid::Document
+    include Mongoid::MoneyField
+    field :notification_serial_number
+    field :product
+    field :quantity
+    money_field :unit_price
 
-    use_database $order_db
+    field :authorized_amount
+    field :autorization_expiration_date
 
-
-    property :google_order_number
-    property :notification_serial_number
-    property :product, :cast_as => 'Product'
-    property :quantity
-    property :unit_price
-    property :status, :default => Google4R::Checkout::NewOrderNotification
-    timestamps!
-
+    embeds_one :order_summary
 end
 
-class Product < Hash
+class OrderSummary
+    include Mongoid::Document
+    include Mongoid::MoneyField
 
-    include ::CouchRest::CastedModel
+    field :google_order_number
+    field :buyer_billing_address
+    field :buyer_id
+    field :buyer_shipping_address
+    field :financial_order_state
+    field :fulfillment_order_state
 
-    property :name
-    property :description
-    property :number_in_stock
-
+    embedded_in :order
 end
 
-$pepsi_product = Product.new(:name => '2-liter bottle of Diet Pepsi', :number_in_stock => 10)
-$number_of_pepsi = 0
+class Product
+    include Mongoid::Document
+    field :name
+    field :description
+    field :number_in_stock
+end
+
+$pepsi_product = Product.new(name: '2-liter bottle of Diet Pepsi', 
+        number_in_stock: 10)
+$number_of_pepsi = Order.count
 $limit_of_pepsi = 10
 
 class SassHandler < Sinatra::Base
@@ -108,14 +119,16 @@ class FundslingApp < Sinatra::Base
             response = cmd.send_to_google_checkout
         end
 
-=begin
+        # TODO:move this after using our own merchant information
         order = Order.new(
-                :quantity => 100, :unit_price => Money.new(1.99, "USD"))
-        order.google_order_number = cmd.google_order_number
-        order.notification_serial_number = response.serial_number
-        order.product = $pepsi_product
-        order.save
-=end
+            quantity: 100, 
+            unit_price: Money.new(0.00, "USD"), 
+            notification_serial_number: response.serial_number, 
+            product: $pepsi_product
+        )
+        order.save!
+
+        # TODO:remove this after using our own merchant information
         $number_of_pepsi += 1
 
 
@@ -138,19 +151,44 @@ class FundslingApp < Sinatra::Base
 
         case notification
         when Google4R::Checkout::NewOrderNotification
-        when Google4R::Checkout::OrderStateChangeNotification
-        when Google4R::Checkout::AuthorizationAmountNotification 
-=begin
-            if Order.all.map! {|x| x.notification_serial_number}.include? 
-                    notification.serial_number
+
+            Order.find_by(notification_serial_number: notification.serial_number) do |order|
+                order.order_summary = OrderSummary.new(
+                    google_order_number: notification.google_order_number,
+                    buyer_billing_address: notification.buyer_billing_address,
+                    buyer_id: notification.buyer_id,
+                    buyer_shipping_address: notification.buyer_shipping_address,
+                    financial_order_state: notification.financial_order_state,
+                    fulfillment_order_state: notification.fulfillment_order_state
+                )
+                order.save
                 $number_of_pepsi += 1
             end
-=end
+
+        when Google4R::Checkout::OrderStateChangeNotification
+
+            Order.find_by(notification_serial_number: notification.serial_number) do |order|
+                order.order_summary.financial_order_state = notification.new_finantial_order_state
+                order.save
+                if notification.new_finantial_order_state == Google4R::Checkout::FinancialOrderState::CANCELLED
+                    order.delete
+                    $number_of_pepsi -= 1
+                end
+            end
+
+        when Google4R::Checkout::AuthorizationAmountNotification 
+
+            Order.find_by(notification_serial_number: notification.serial_number) do |order|
+                order.authorization_amount = notification.authorization_amount
+                order.authorization_expiration_date = notification.authorization_expiration_date
+                order.save
+            end
 
             # ready to charge :)
             if $number_of_pepsi == $limit_of_pepsi
                 # charge!
             end
+
         else
             puts 'no'
         end

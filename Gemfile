@@ -8,5 +8,7 @@ gem 'coffee-script'
 
 gem 'google4r-checkout'
 
-gem 'couchrest'
-gem 'couchrest_extended_document'
+gem 'bson_ext'
+gem 'mongo'
+gem 'mongoid'
+gem 'mongoid_money_field'

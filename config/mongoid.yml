@@ -1,0 +1,10 @@
+development:
+    sessions:
+        default:
+            uri: mongodb://heroku_app9592846:jaurlg6er732ng6v87hdvb5qqh@ds043987.mongolab.com:43987/heroku_app9592846
+
+production:
+    sessions:
+        default:
+            uri: mongodb://heroku_app9592846:jaurlg6er732ng6v87hdvb5qqh@ds043987.mongolab.com:43987/heroku_app9592846
+            #uri: <%= ENV['MONGOLAB_URI'] %>
