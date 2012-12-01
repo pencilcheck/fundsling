@@ -115,5 +115,5 @@ class FundslingApp < Sinatra::Base
 end
 
 if __FILE__ == $0
-    FundslingApp.run! :port => 5000
+    FundslingApp.run! :port => ENV['PORT']
 end
