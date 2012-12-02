@@ -32,9 +32,6 @@ GEM
       moped (~> 1.1)
       origin (~> 1.0)
       tzinfo (~> 0.3.22)
-    mongoid_money_field (3.2.0)
-      money
-      mongoid (>= 2.4.0)
     moped (1.3.0)
     multi_json (1.3.7)
     origin (1.0.11)
@@ -66,7 +63,6 @@ DEPENDENCIES
   google4r-checkout
   mongo
   mongoid
-  mongoid_money_field
   sass
   sinatra
   slim

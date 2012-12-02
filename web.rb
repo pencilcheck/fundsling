@@ -5,7 +5,7 @@ require 'coffee-script'
 require 'google4r/checkout'
 require 'mongo'
 require 'mongoid'
-require 'mongoid_money_field'
+#require 'mongoid_money_field' # don't use it, it will prevent anything else from saving
 
 require './test/frontend_configuration'
 require './taxtablefactory'
@@ -17,43 +17,109 @@ $frontend.tax_table_factory = TaxTableFactory.new
 
 Mongoid.load!("config/mongoid.yml")
 
+class Money::Currency
+
+    def mongoize
+        [self.id]
+    end
+
+    class << self
+        def demongoize(object)
+            Money::Currency.new(object[0])
+        end
+
+        def mongoize(object)
+            object.mongoize
+        end
+
+        def evolve(object)
+            object.mongoize
+        end
+    end
+end
+
+class Money
+
+    def mongoize
+        [self.cents, self.currency.mongoize]
+    end
+
+    class << self
+        def demongoize(object)
+            Money.new(object[0], Money::Currency.demongoize([object[1]]))
+        end
+
+        def mongoize(object)
+            object.mongoize
+        end
+
+        def evolve(object)
+            object.mongoize
+        end
+    end
+end
+
+class Google4R::Checkout::Address
+
+    def mongoize
+        [self.address1, self.address2, self.company_name, self.contact_name, self.email, self.fax, self.phone, 
+        self.address_id, self.city, self.country_code, self.postal_code, self.region]
+    end
+
+    class << self
+        def demongoize(object)
+            result = Address.new
+            result.address1, result.address2, result.company_name, result.contact_name, result.email, result.fax, result.phone, result.address_id, result.city, result.country_code, result.postal_code, result.region = object
+            result
+        end
+
+        def mongoize(object)
+            object.mongoize
+        end
+
+        def evolve(object)
+            object.mongoize
+        end
+    end
+end
+
 class Order
     include Mongoid::Document
-    include Mongoid::MoneyField
-    field :notification_serial_number
-    field :product
-    field :quantity
-    money_field :unit_price
+    field :notification_serial_number, type: String
+    field :quantity, type: Integer
+    field :unit_price, type: Money
 
-    field :authorized_amount
-    field :autorization_expiration_date
+    field :authorized_amount, type: Money
+    field :autorization_expiration_date, type: DateTime
 
     embeds_one :order_summary
+    embeds_one :product
 end
 
 class OrderSummary
     include Mongoid::Document
-    include Mongoid::MoneyField
 
-    field :google_order_number
-    field :buyer_billing_address
-    field :buyer_id
-    field :buyer_shipping_address
-    field :financial_order_state
-    field :fulfillment_order_state
+    field :google_order_number, type: String
+    field :buyer_billing_address, type: Google4R::Checkout::Address
+    field :buyer_id, type: String
+    field :buyer_shipping_address, type: Google4R::Checkout::Address
+    field :financial_order_state, type: String
+    field :fulfillment_order_state, type: String
 
     embedded_in :order
 end
 
 class Product
     include Mongoid::Document
-    field :name
-    field :description
-    field :number_in_stock
+    field :product_id, type: String
+    field :name, type: String
+    field :description, type: String
+    field :number_in_stock, type: Integer
 end
 
-$pepsi_product = Product.new(name: '2-liter bottle of Diet Pepsi', 
-        number_in_stock: 10)
+$pepsi_product = Product.create(name: '2-liter bottle of Diet Pepsi', 
+        number_in_stock: 10,
+        product_id: "1s3945GG0")
 $number_of_pepsi = Order.count
 $limit_of_pepsi = 10
 
@@ -87,7 +153,6 @@ class FundslingApp < Sinatra::Base
     set :views, File.dirname(__FILE__) + '/views'
 
     get '/' do
-        @limit = $limit_of_pepsi
         slim :index
     end
 
@@ -121,7 +186,7 @@ class FundslingApp < Sinatra::Base
 
         # TODO:move this after using our own merchant information
         order = Order.new(
-            quantity: 100, 
+            quantity: 100,
             unit_price: Money.new(0.00, "USD"), 
             notification_serial_number: response.serial_number, 
             product: $pepsi_product
