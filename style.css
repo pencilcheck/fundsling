@@ -1,0 +1,33 @@
+
+#top {
+background-image:url('NEED FILE FROM ALEX');
+
+}
+
+
+#leftsideimage {
+	float: left;
+    width: 39%;	
+	position: relative;
+}
+
+#rightsidetext {
+	float: right;
+    position: relative;
+    width: 39%;	
+}
+
+#mid {
+	padding:110px;
+   padding-bottom:60px;  
+
+}
+
+#bottom {
+   position:absolute;
+   right:0px;
+   width:40%;
+   bottom:10px;
+   
+      
+}
