@@ -1,11 +1,19 @@
 require 'sinatra/base'
+
 require 'slim'
 require 'sass'
 require 'coffee-script'
+
 require 'google4r/checkout'
+
 require 'mongo'
 require 'mongoid'
 #require 'mongoid_money_field' # don't use it, it will prevent anything else from saving
+
+require 'encrypted_cookie'
+require 'digest/sha1'
+require 'rack-flash'
+require 'sinatra-authentication'
 
 require './test/frontend_configuration'
 require './taxtablefactory'
@@ -46,7 +54,7 @@ class Money
 
     class << self
         def demongoize(object)
-            Money.new(object[0], Money::Currency.demongoize([object[1]]))
+            Money.new(object[0], Money::Currency.demongoize(object[1]))
         end
 
         def mongoize(object)
@@ -99,6 +107,7 @@ end
 class OrderSummary
     include Mongoid::Document
 
+    field :user_id, type: Moped::BSON::ObjectId
     field :google_order_number, type: String
     field :buyer_billing_address, type: Google4R::Checkout::Address
     field :buyer_id, type: String
@@ -145,22 +154,33 @@ class CoffeeHandler < Sinatra::Base
 end
 
 class FundslingApp < Sinatra::Base
-
-    use SassHandler
-    use CoffeeHandler
+    register Sinatra::SinatraAuthentication
 
     set :public_folder, File.dirname(__FILE__) + '/public'
     set :views, File.dirname(__FILE__) + '/views'
 
+    set :template_engine, :slim
+    set :sinatra_authentication_view_path, File.expand_path('../views/authentication', __FILE__)
+
+    use SassHandler
+    use CoffeeHandler
+
+    use Rack::Session::EncryptedCookie, :secret => 'A1 sauce 1s so good you should use 1t on a11 yr st34ksssss'
+    use Rack::Flash
+
+
     get '/' do
-        slim :index
+        purchases = logged_in? ? Order.where(user_id: current_user._id) : []
+        slim :index, :layout => true, :locals => {:purchases => purchases}
     end
 
     get '/full' do
-        slim :full
+        slim :full, :layout => true
     end
 
     get '/create' do
+        login_required
+        
         redirect '/full' if $number_of_pepsi >= $limit_of_pepsi
         
         # Create a new checkout command (to place an order)
@@ -186,6 +206,7 @@ class FundslingApp < Sinatra::Base
 
         # TODO:move this after using our own merchant information
         order = Order.new(
+            user_id: current_user._id,
             quantity: 100,
             unit_price: Money.new(0.00, "USD"), 
             notification_serial_number: response.serial_number, 
