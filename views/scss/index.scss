@@ -1,5 +1,17 @@
 body {
-    width: 100%;
-    height: 100%;
-    background: #FFFFFF url(http://www.shoppingnexus.com/images/products/diet-pepsi-2-liter-plastic-bottle.jpg) no-repeat center 150px;
+    background: #FFFFFF url(/img/retina_wood.png)
+}
+
+p {
+}
+
+bottle {
+    display: block;
+    position: absolute;
+    top: 100px;
+    left: 400px;
+    width: 500px;
+    height: 500px;
+    background: url(/img/diet-pepsi-2-liter-plastic-bottle.png) no-repeat;
+    z-index: 2;
 }

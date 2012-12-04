@@ -1,27 +1,18 @@
-script src="/js/index.js"
-link rel="stylesheet" type="text/css" href="/css/index.css"
+script src="/coffee/index.coffee"
+link rel="stylesheet" type="text/css" href="/scss/index.scss"
 
-p= flash[:notice]
-p= flash[:error]
-p Hello, want to have some <a href="/create">Diet Pepsi</a>?
-p only <span id="leftovers-of-pepsi"></span> available
-p <span id="number-of-pepsi"></span> people already ordered, <span id="motivation-speech"></span>
 - if logged_in?
-    p Here is your current purchases
-    - if purchases.empty?
-        p No purchases
-    - else
-        table
-            tr
-                th Name
-                th Quantity
-                th Unit Price
-            - for purchase in purchases do
-                tr
-                    td.name= purchase.product.name
-                    td.quantity= purchase.quantity
-                    td.unit_price= purchase.unit_price
     p <a href="/logout">Logout</a>
 - else
     p <a href="/signup">Sign up</a>
     p <a href="/login">Login</a>
+
+p= session
+
+- for product in products
+    .product
+        h2 Product
+        p Hello, want to have some <a href="/orders/create/#{product._id}">#{product.name}</a>?
+        p only <span id="leftovers-of-pepsi">#{product.number_in_stock}</span> available
+        p <span id="number-of-pepsi">#{product.number_of_purchases}</span> people already ordered, <span id="motivation-speech"></span>
+    bottle

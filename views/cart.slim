@@ -1,0 +1,16 @@
+script src="/coffee/cart.coffee"
+link rel="stylesheet" type="text/css" href="/scss/cart.scss"
+
+section#container
+    p Here is your current purchases
+    - if purchases.empty?
+        p No purchases
+    - else
+        table
+            tr
+                th Product Id
+                th Quantity
+            - for purchase in purchases do
+                tr
+                    td.name= purchase._id
+                    td.quantity= purchase.quantity

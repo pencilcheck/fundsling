@@ -7,6 +7,7 @@ gem 'thin'
 gem 'slim'
 gem 'sass'
 gem 'coffee-script'
+gem 'dust-sinatra'
 
 gem 'google4r-checkout'
 
@@ -15,5 +16,7 @@ gem 'mongo'
 gem 'mongoid'
 
 gem 'encrypted_cookie'
-gem 'sinatra-authentication', :git => 'git://github.com/maxjustus/sinatra-authentication.git' # gem has not been updated since 2010
 gem 'rack-flash'
+gem 'sinatra-authentication', :git => 'git://github.com/maxjustus/sinatra-authentication.git' # gem has not been updated since 2010
+
+gem 'sinatra-session'
