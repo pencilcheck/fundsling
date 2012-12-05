@@ -344,7 +344,7 @@ class FundslingApp < Sinatra::Base
 
         valid_order?(params[:_id]) and owner? params[:_id]
 
-        unless logged_in?
+        if logged_in?
             if Order.where(_id: params[:_id], user_id: current_user._id).exists?
                 order = Order.where(_id: params[:_id], user_id: current_user._id).first
                 order.as_document.to_json
