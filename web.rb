@@ -1,6 +1,7 @@
 require 'sinatra/base'
 require 'sinatra/session'
 require 'sinatra/cookies'
+require 'sinatra/reloader'
 
 require 'slim'
 require 'sass'
@@ -182,9 +183,16 @@ class DustHandler < Sinatra::Base
 end
 
 class FundslingApp < Sinatra::Base
-    register Sinatra::SinatraAuthentication
-    register Sinatra::Session
-    register Dust::Sinatra
+    configure do
+        Dust.config.template_root = File.expand_path('../views/dust/', __FILE__)
+        register Sinatra::SinatraAuthentication
+        register Sinatra::Session
+        register Dust::Sinatra
+    end
+
+    configure :development do
+        register Sinatra::Reloader
+    end
 
     helpers Sinatra::Cookies
 
@@ -196,9 +204,6 @@ class FundslingApp < Sinatra::Base
     set :template_engine, :slim
     set :sinatra_authentication_view_path, File.expand_path('../views/authentication', __FILE__)
 
-    configure do
-        Dust.config.template_root = File.expand_path('../views/dust/', __FILE__)
-    end
 
     use SassHandler
     use CoffeeHandler
