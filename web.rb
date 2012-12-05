@@ -96,18 +96,27 @@ class Google4R::Checkout::Address
     end
 end
 
-class Order
+class PreOrder
     include Mongoid::Document
     include Mongoid::Timestamps
     field :user_id, type: Moped::BSON::ObjectId
     field :session_name, type: String
     field :notification_serial_number, type: String
     field :quantity, type: Integer, default: 1
+    field :product_id, type: Moped::BSON::ObjectId
+end
+
+class Order
+    include Mongoid::Document
+    include Mongoid::Timestamps
+    field :preorder_id, type: Moped::BSON::ObjectId
+    field :user_id, type: Moped::BSON::ObjectId
+    field :session_name, type: String
+    field :quantity, type: Integer, default: 1
 
     field :authorized_amount, type: Money
     field :autorization_expiration_date, type: DateTime
 
-    field :product_id, type: Moped::BSON::ObjectId
     embeds_one :order_summary
     embeds_one :product
 end
@@ -293,12 +302,10 @@ class FundslingApp < Sinatra::Base
         valid_product?(params[:product_id])
         product = Product.where(_id: params[:product_id]).first
 
-        puts product.inspect
+        product_ordered = product.number_of_purchases
+        product_in_stock = product.number_in_stock
 
-        pepsi_ordered = product.number_of_purchases
-        pepsi_in_stock = product.number_in_stock
-
-        if pepsi_ordered >= pepsi_in_stock
+        if product_ordered >= product_in_stock
             flash[:error] = "This product is already full, please try it next time."
             redirect back 
         end
@@ -324,18 +331,109 @@ class FundslingApp < Sinatra::Base
             response = cmd.send_to_google_checkout
         end
 
-        order = Order.new(
+        # TODO:should be created after receiving notification from Google
+        preorder = PreOrder.new(
             user_id: logged_in? ? current_user._id : nil,
             session_name: session[:name],
-            quantity: 1,
             notification_serial_number: response.serial_number, 
             product_id: product._id,
-            product: product
+            quantity: 1
         )
-        order.save!
+        preorder.save!
 
         # Redirect the user to Google Checkout to complete the transaction
         redirect response.redirect_url
+    end
+
+    # update sorta...
+    post '/handler' do
+        handler = $frontend.create_notification_handler
+        
+        begin
+            notification = handler.handle(request.raw_post)
+        rescue Google4R::Checkout::UnknownNotificationType
+            puts 'cannot comprehend'
+            return
+        end
+
+        case notification
+        when Google4R::Checkout::NewOrderNotification
+
+            PreOrder.find_by(
+                    notification_serial_number: notification.serial_number) do |preorder|
+                product = Product.where(_id: preorder.product_id)
+
+                product.number_in_stock -= 1
+                product.number_of_purchases += 1
+
+                order = Order.new(
+                    preorder_id: preorder._id,
+                    user_id: preorder.user_id,
+                    session_name: preorder.session_name,
+                    quantity: preorder.quantity,
+                    product: product
+                )
+                order.order_summary = OrderSummary.new(
+                    google_order_number: notification.google_order_number,
+                    buyer_billing_address: notification.buyer_billing_address,
+                    buyer_id: notification.buyer_id,
+                    buyer_shipping_address: notification.buyer_shipping_address,
+                    financial_order_state: notification.financial_order_state,
+                    fulfillment_order_state: notification.fulfillment_order_state
+                )
+                order.save
+
+                product.save
+            end
+
+        when Google4R::Checkout::OrderStateChangeNotification
+
+            PreOrder.find_by(
+                    notification_serial_number: notification.serial_number) do |preorder|
+                product = Product.where(_id: preorder.product_id)
+
+                order = Order.where(preoder_id: preorder._id)
+
+                order.order_summary.financial_order_state = notification.new_finantial_order_state
+                order.save
+                if notification.new_finantial_order_state == 
+                        Google4R::Checkout::FinancialOrderState::CANCELLED
+                    order.delete
+
+                    product.number_in_stock += 1
+                    product.number_of_purchases -= 1
+                    product.save
+                end
+            end
+
+        when Google4R::Checkout::AuthorizationAmountNotification 
+
+            PreOrder.find_by(
+                    notification_serial_number: notification.serial_number) do |preorder|
+                product = Product.where(_id: preorder.product_id)
+
+                order = Order.where(preoder_id: preorder._id)
+
+                order.authorization_amount = notification.authorization_amount
+                order.authorization_expiration_date = 
+                    notification.authorization_expiration_date
+                order.save
+
+                # ready to charge :)
+                if product.number_in_stock == 0
+                    # time to charge!
+                end
+
+            end
+
+        else
+            puts 'no'
+        end
+
+        notification_acknowledgement = Google4R::Checkout::NotificationAcknowledgement.new(notification)
+
+        content_type 'text/xml'
+        notification_acknowledgement.to_xml
     end
 
     # read one or all
@@ -373,84 +471,6 @@ class FundslingApp < Sinatra::Base
         true
     end
 
-    # update sorta...
-    post '/handler' do
-        handler = $frontend.create_notification_handler
-        
-        begin
-            notification = handler.handle(request.raw_post)
-        rescue Google4R::Checkout::UnknownNotificationType
-            puts 'cannot comprehend'
-            return
-        end
-
-        case notification
-        when Google4R::Checkout::NewOrderNotification
-
-            Order.find_by(
-                    notification_serial_number: notification.serial_number) do |order|
-                product = Product.where(_id: order.product_id)
-
-                order.order_summary = OrderSummary.new(
-                    google_order_number: notification.google_order_number,
-                    buyer_billing_address: notification.buyer_billing_address,
-                    buyer_id: notification.buyer_id,
-                    buyer_shipping_address: notification.buyer_shipping_address,
-                    financial_order_state: notification.financial_order_state,
-                    fulfillment_order_state: notification.fulfillment_order_state
-                )
-                order.save
-
-                product.number_in_stock -= 1
-                product.number_of_purchases += 1
-                product.save!
-            end
-
-        when Google4R::Checkout::OrderStateChangeNotification
-
-            Order.find_by(
-                    notification_serial_number: notification.serial_number) do |order|
-                product = Product.where(_id: order.product_id)
-
-                order.order_summary.financial_order_state = notification.new_finantial_order_state
-                order.save
-                if notification.new_finantial_order_state == 
-                        Google4R::Checkout::FinancialOrderState::CANCELLED
-                    order.delete
-
-                    product.number_in_stock += 1
-                    product.number_of_purchases -= 1
-                    product.save!
-                end
-            end
-
-        when Google4R::Checkout::AuthorizationAmountNotification 
-
-            Order.find_by(
-                    notification_serial_number: notification.serial_number) do |order|
-                product = Product.where(_id: order.product_id)
-
-                order.authorization_amount = notification.authorization_amount
-                order.authorization_expiration_date = 
-                    notification.authorization_expiration_date
-                order.save
-
-                # ready to charge :)
-                if product.number_in_stock == 0
-                    # charge!
-                end
-
-            end
-
-        else
-            puts 'no'
-        end
-
-        notification_acknowledgement = Google4R::Checkout::NotificationAcknowledgement.new(notification)
-
-        content_type 'text/xml'
-        notification_acknowledgement.to_xml
-    end
 
 
 ## Private pages
