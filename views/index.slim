@@ -1,3 +1,5 @@
+script src="/js/dust-core.js"
+script src="/dust/index_product_item_template.js.dust"
 script src="/coffee/index.coffee"
 link rel="stylesheet" type="text/css" href="/scss/index.scss"
 
@@ -7,12 +9,5 @@ link rel="stylesheet" type="text/css" href="/scss/index.scss"
     p <a href="/signup">Sign up</a>
     p <a href="/login">Login</a>
 
-p= session
-
-- for product in products
-    .product
-        h2 Product
-        p Hello, want to have some <a href="/orders/create/#{product._id}">#{product.name}</a>?
-        p only <span id="leftovers-of-pepsi">#{product.number_in_stock}</span> available
-        p <span id="number-of-pepsi">#{product.number_of_purchases}</span> people already ordered, <span id="motivation-speech"></span>
-    bottle
+.category
+bottle

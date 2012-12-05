@@ -1,16 +1,14 @@
+script src="/js/dust-core.js"
+script src="/dust/cart_order_item_template.js.dust"
 script src="/coffee/cart.coffee"
 link rel="stylesheet" type="text/css" href="/scss/cart.scss"
 
-section#container
+- if not logged_in?
+    p Want to keep all past purchase history? <a href="/signup">Sign up</a> now!
+
+section.container
     p Here is your current purchases
     - if purchases.empty?
         p No purchases
     - else
-        table
-            tr
-                th Product Id
-                th Quantity
-            - for purchase in purchases do
-                tr
-                    td.name= purchase._id
-                    td.quantity= purchase.quantity
+        .cart

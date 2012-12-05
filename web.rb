@@ -101,7 +101,7 @@ class Order
     field :user_id, type: Moped::BSON::ObjectId
     field :session_name, type: String
     field :notification_serial_number, type: String
-    field :quantity, type: Integer
+    field :quantity, type: Integer, default: 1
 
     field :authorized_amount, type: Money
     field :autorization_expiration_date, type: DateTime
@@ -209,6 +209,21 @@ class FundslingApp < Sinatra::Base
                 redirect back 
             end
         end
+
+        def owner?(product_id)
+            if logged_in?
+                unless Product.where(_id: product_id, user_id: current_user._id).exists?
+                    redirect '/login' 
+                    return false
+                end
+            else
+                unless Product.where(_id: product_id, session_name: session[:name]).exists?
+                    redirect '/login' 
+                    return false
+                end
+            end
+            return true
+        end
     end
 
 ## Public pages
@@ -221,11 +236,14 @@ class FundslingApp < Sinatra::Base
         else
             session[:name] = current_user.session_name
         end
-        products = Product.all
-        slim :index, :layout => true, :locals => {:products => products, :session => session}
+        slim :index, :layout => true, :locals => {:session => session}
     end
 
-    # cart page
+    get '/test' do
+        slim :test
+    end
+
+    # cart page, showing all orders
     get '/cart' do
         unless logged_in?
             purchases = Order.where(user_id: current_user._id).entries
@@ -236,16 +254,33 @@ class FundslingApp < Sinatra::Base
     end
 
     # order detail page
-    get '/orders/:order_id' do
-        valid_order?(params[:order_id])
-        slim :order, :layout => true, :locals => {:order_id => params[:order_id]}
+    get '/orders/:id/detail' do
+        valid_order? params[:id] and owner? params[:id]
+        slim :order, :layout => true, :locals => {:order_id => params[:id]}
     end
 
     # product detail page
-    get '/products/:product_id' do
-        valid_product?(params[:product_id])
-        slim :product, :layout => true, :locals => {:product_id => params[:product_id]}
+    get '/products/:id/detail' do
+        valid_product? params[:id]
+        slim :product, :layout => true, :locals => {:product_id => params[:id]}
     end
+
+# Products
+
+    # public read, later there should be distinctions
+    get '/products/:_id' do
+        #if request.xhr?
+        if not params.key? :_id or params[:_id] == "undefined"
+            return JSON.dump Product.desc(:created_at).map! {|x| x.as_document}
+        end
+
+        if Product.where(_id: params[:_id]).exists?
+            product = Product.where(_id: params[:_id]).first
+            product.as_document.to_json
+        end
+    end
+
+# Orders
 
     # ajax create order
     get '/orders/create/:product_id' do
@@ -296,13 +331,42 @@ class FundslingApp < Sinatra::Base
         redirect response.redirect_url
     end
 
-    # ajax version of product information
-    post '/products/:product_id' do
-        valid_product?(params[:product_id])
-        product = Product.where(_id: params[:product_id])
-        JSON.dump product
+    # read one or all
+    get '/orders/:_id' do
+        #if request.xhr?
+        if not params.key? :_id or params[:_id] == "undefined"
+            unless logged_in?
+                return JSON.dump Order.where(user_id: current_user._id).desc(:created_at).map! {|x| x.as_document}
+            else
+                return JSON.dump Order.where(session_name: session[:name]).desc(:created_at).map! {|x| x.as_document}
+            end
+        end
+
+        valid_order?(params[:_id]) and owner? params[:_id]
+
+        unless logged_in?
+            if Order.where(_id: params[:_id], user_id: current_user._id).exists?
+                order = Order.where(_id: params[:_id], user_id: current_user._id).first
+                order.as_document.to_json
+            end
+        else
+            if Order.where(_id: params[:_id], session_name: session[:name]).exists?
+                order = Order.where(_id: params[:_id], session_name: session[:name]).first
+                order.as_document.to_json
+            end
+        end
     end
 
+    # remove
+    delete '/orders/:_id' do
+        valid_order?(params[:_id]) and owner? params[:_id]
+        
+        Order.where(_id: params[:_id]).first.delete
+
+        true
+    end
+
+    # update sorta...
     post '/handler' do
         handler = $frontend.create_notification_handler
         
@@ -390,28 +454,16 @@ class FundslingApp < Sinatra::Base
         slim :index, :views => File.dirname(__FILE__) + '/views/admin', :layout => true
     end
 
+    # show all orders
+    get '/icecream/orders' do
+        login_required and current_user.admin?
+        slim :orders, :views => File.dirname(__FILE__) + '/views/admin', :layout => true
+    end
+
+    # show all products
     get '/icecream/products' do
         login_required and current_user.admin?
         slim :products, :views => File.dirname(__FILE__) + '/views/admin', :layout => true
-    end
-
-    # returns a list of products in json format
-    post '/icecream/products' do
-        login_required and current_user.admin?
-        JSON.dump Product.all.desc(:created_at).map! {|x| x.as_document}
-    end
-
-    post '/icecream/products/add' do
-        login_required and current_user.admin?
-
-        product = Product.create(
-            name: params[:product][:name],
-            unit_price: Money.parse("$" + params[:product][:unit_price_in_usd]),
-            number_in_stock: params[:product][:in_stock].to_i,
-            number_of_purchases: 0
-        )
-
-        JSON.dump product.as_document
     end
 
     # show all registered users
@@ -420,16 +472,110 @@ class FundslingApp < Sinatra::Base
         slim :users, :views => File.dirname(__FILE__) + '/views/admin', :layout => true
     end
 
-    # show all orders
-    get '/icecream/orders' do
+# Orders
+
+    # read one or all
+    get '/icecream/orders/:_id' do
         login_required and current_user.admin?
-        slim :orders, :views => File.dirname(__FILE__) + '/views/admin', :layout => true
+
+        #if request.xhr?
+        if not params.key? :_id or params[:_id] == "undefined"
+            return JSON.dump Order.all.desc(:created_at).map! {|x| x.as_document}
+        end
+
+        valid_order?(params[:_id])
+
+        if Order.where(_id: params[:_id]).exists?
+            order = Order.where(_id: params[:_id]).first
+            order.as_document.to_json
+        end
+    end
+
+    # update
+    put '/icecream/orders/:_id' do
+        login_required and current_user.admin?
+        valid_order?(params[:_id])
+
+        order = Order.where(_id: params[:_id]).first
+
+        order.update_attributes(params)
+
+        order.as_document.to_json
+    end
+
+    # remove
+    delete '/icecream/orders/:_id' do
+        login_required and current_user.admin?
+        valid_order?(params[:_id])
+        
+        Order.where(_id: params[:_id]).first.delete
+
+        true
+    end
+
+
+# Products
+
+    # create
+    post '/icecream/products' do
+        login_required and current_user.admin?
+        valid_product?(params[:_id])
+
+        product = Product.new(
+            name: params[:name],
+            unit_price: Money.parse("$" + params[:unit_price]),
+            number_in_stock: params[:number_in_stock].to_i,
+            number_of_purchases: 0
+        )
+        product.save
+
+        product.as_document.to_json
+    end
+
+    # read one or all
+    get '/icecream/products/:_id' do
+        login_required and current_user.admin?
+        valid_product?(params[:_id])
+
+        #if request.xhr?
+        if not params.key? :_id or params[:_id] == "undefined"
+            return JSON.dump Product.all.desc(:created_at).map! {|x| x.as_document}
+        end
+
+        if Product.where(_id: params[:_id]).exists?
+            product = Product.where(_id: params[:_id]).first
+            product.as_document.to_json
+        end
+    end
+
+    # update
+    put '/icecream/products/:_id' do
+        login_required and current_user.admin?
+        valid_product?(params[:_id])
+
+        product = Product.where(_id: params[:_id]).first
+
+        product.update_attributes(params)
+
+        product.as_document.to_json
+    end
+
+    # remove
+    delete '/icecream/products/:_id' do
+        login_required and current_user.admin?
+        valid_product?(params[:_id])
+        
+        Product.where(_id: params[:_id]).first.delete
+
+        true
     end
 end
 
+puts 'frontend'
 $frontend = Google4R::Checkout::Frontend.new(FRONTEND_CONFIGURATION)
 $frontend.tax_table_factory = TaxTableFactory.new
 
+puts 'Mongoid'
 Mongoid.load!("config/mongoid.yml")
 
 

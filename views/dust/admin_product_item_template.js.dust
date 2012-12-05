@@ -1,7 +1,8 @@
 <div class="product">
-    <h1>{name}</h1>
-    <p>product id: {product_id}</p>
-    <p>in stock: {number_in_stock}</p>
-    <p>purchases: {number_of_purchases}</p>
-    <p>unit price: {#unit_price}{.} {/unit_price}</p>
+    <a class="close">x</a>
+    <h1 id="name">{name}</h1>
+    <p id="product_id">product id: {_id}</p>
+    <p id="number_in_stock">in stock: {number_in_stock}</p>
+    <p id="number_of_purchases">purchases: {number_of_purchases}</p>
+    <p id="unit_price">unit price: {#unit_price}{.} {/unit_price}</p>
 </div>

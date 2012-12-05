@@ -1,0 +1,10 @@
+<div class="order">
+    <a class="close">x</a>
+    <h1 id="name">{name}</h1>
+    <p id="order_id">order id: {_id}</p>
+    <p id="quantity">quantity: {quantity}</p>
+    <p id="authorized_amount">authorized amount: {#authorized_amount}{.} {/unit_price}</p>
+    <p id="authorization_expiration_date">authorization expiration date: {authorization_expiration_date}</p>
+    <p id="product_id">product id: {product_id}</p>
+</div>
+
