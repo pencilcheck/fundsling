@@ -335,7 +335,7 @@ class FundslingApp < Sinatra::Base
     get '/orders/:_id' do
         #if request.xhr?
         if not params.key? :_id or params[:_id] == "undefined"
-            unless logged_in?
+            if logged_in?
                 return JSON.dump Order.where(user_id: current_user._id).desc(:created_at).map! {|x| x.as_document}
             else
                 return JSON.dump Order.where(session_name: session[:name]).desc(:created_at).map! {|x| x.as_document}
