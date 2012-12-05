@@ -217,7 +217,7 @@ class FundslingApp < Sinatra::Base
                     return false
                 end
             else
-                unless Product.where(_id: product_id, session_name: session[:name]).exists?
+                unless Product.where(_id: product_id, session_name: cookies[:name]).exists?
                     redirect '/login' 
                     return false
                 end
@@ -232,11 +232,11 @@ class FundslingApp < Sinatra::Base
     get '/' do
         session_start!
         unless logged_in?
-            session[:name] = (0...8).map{65.+(rand(26)).chr}.join
+            cookies[:name] = (0...8).map{65.+(rand(26)).chr}.join
         else
-            session[:name] = current_user.session_name
+            cookies[:name] = current_user.session_name
         end
-        slim :index, :layout => true, :locals => {:session => session}
+        slim :index, :layout => true
     end
 
     get '/test' do
@@ -248,7 +248,7 @@ class FundslingApp < Sinatra::Base
         unless logged_in?
             purchases = Order.where(user_id: current_user._id).entries
         else
-            purchases = Order.where(session_name: session[:name]).entries
+            purchases = Order.where(session_name: cookies[:name]).entries
         end
         slim :cart, :layout => true, :locals => {:purchases => purchases}
     end
@@ -320,7 +320,7 @@ class FundslingApp < Sinatra::Base
 
         order = Order.new(
             user_id: logged_in? ? current_user._id : nil,
-            session_name: session[:name],
+            session_name: cookies[:name],
             quantity: 1,
             notification_serial_number: response.serial_number, 
             product_id: product._id
@@ -338,7 +338,7 @@ class FundslingApp < Sinatra::Base
             if logged_in?
                 return JSON.dump Order.where(user_id: current_user._id).desc(:created_at).map! {|x| x.as_document}
             else
-                return JSON.dump Order.where(session_name: session[:name]).desc(:created_at).map! {|x| x.as_document}
+                return JSON.dump Order.where(session_name: cookies[:name]).desc(:created_at).map! {|x| x.as_document}
             end
         end
 
@@ -350,8 +350,8 @@ class FundslingApp < Sinatra::Base
                 order.as_document.to_json
             end
         else
-            if Order.where(_id: params[:_id], session_name: session[:name]).exists?
-                order = Order.where(_id: params[:_id], session_name: session[:name]).first
+            if Order.where(_id: params[:_id], session_name: cookies[:name]).exists?
+                order = Order.where(_id: params[:_id], session_name: cookies[:name]).first
                 order.as_document.to_json
             end
         end
