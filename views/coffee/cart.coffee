@@ -66,26 +66,24 @@ jQuery ->
 
         orders.on 'remove', (name) ->
             console.log 'remove event callback'
-            cart_view.render()
 
         orders.on 'reset', (name) ->
             console.log 'reset event callback'
-            cart_view.render()
 
         orders.on 'sync', (name) ->
             console.log 'sync event callback'
-            cart_view.render()
 
         orders.on 'add', (name) ->
             console.log 'add event callback'
-            cart_view.render()
         
         $('.close').live 'click', ->
             console.log 'click close'
             order_id = $(this).parent().find('#order_id').text().split(' ')[2]
             orders.remove [orders.find (item) -> item.get("_id") == order_id]
 
-        orders.fetch()
+        orders.fetch
+            success: (data) ->
+                cart_view.render()
 
 
     initialize()

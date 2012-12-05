@@ -8,7 +8,6 @@ link rel="stylesheet" type="text/css" href="/scss/cart.scss"
 
 section.container
     p Here is your current purchases
-    - if purchases.empty?
-        p No purchases
-    - else
-        .cart
+    .cart
+        - if purchases.empty?
+            p No purchases
