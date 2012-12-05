@@ -3,6 +3,8 @@ require 'sinatra/session'
 require 'sinatra/cookies'
 require 'sinatra/reloader'
 
+require 'pony'
+
 require 'slim'
 require 'sass'
 require 'coffee-script'
@@ -145,7 +147,7 @@ class Product
     field :number_of_purchases, type: Integer
 end
 
-# User authentication model
+# Extending user model in authentication model
 class MongoidUser
     field :session_name, type: String
 end
@@ -192,6 +194,21 @@ class FundslingApp < Sinatra::Base
 
     configure :development do
         register Sinatra::Reloader
+    end
+
+    configure :production do
+        Pony.options = {
+            :via => :smtp,
+            :via_options => {
+                :address => 'smtp.sendgrid.net',
+                :port => '587',
+                :domain => 'heroku.com',
+                :user_name => ENV['SENDGRID_USERNAME'],
+                :password => ENV['SENDGRID_PASSWORD'],
+                :authentication => :plain,
+                :enable_starttls_auto => true
+            }
+        }
     end
 
     helpers Sinatra::Cookies

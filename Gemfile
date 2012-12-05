@@ -10,6 +10,8 @@ gem 'sass'
 gem 'coffee-script'
 gem 'dust-sinatra'
 
+gem 'pony'
+
 gem 'google4r-checkout'
 
 gem 'bson_ext'
