@@ -2,7 +2,7 @@ jQuery ->
     toType = (obj) ->
         ({}).toString.call(obj).match(/\s([a-zA-Z]+)/)[1].toLowerCase()
 
-    Backbone.sync = (method, model, options) ->
+    Backbone.sync = (method, model, options) =>
         console.log "in sync"
         switch method
             when "create"
@@ -74,12 +74,18 @@ jQuery ->
                         options.error
                 )
 
+    class Product extends Backbone.Model
+        defaults:
+            number_of_purchases: 0
+
     class ProductsModel extends Backbone.Collection
         url: '/icecream/products'
                     
 
     class ProductsView extends Backbone.View
         el: '.products'
+        spin_first: (opt) ->
+            @$('.product:first').spin(opt)
         render: ->
             console.log "render"
             console.log @$el
@@ -126,9 +132,12 @@ jQuery ->
                 options = {}
                 options = _.reduce arr, ((abs, thing) -> abs[thing.name] = thing.value; abs), {}
                 console.log options
-                model = new Backbone.Model(options)
+                model = new Product(options)
+                model.save
+                    success: (data) =>
+                        products_view.spin_first(false)
                 products.unshift model
-                products.sync()
+                products_view.spin_first()
                 false
             success: (data) ->
                 console.log data
@@ -136,35 +145,5 @@ jQuery ->
                 alert ["/icecream/products", textStatus, textStatus, errorThrown]
 
         products.fetch()
-            #success: (data) ->
-                #products_view.render()
-
-
-    pull = ->
-        products = new Backbone.Collection()
-        $.ajax(
-            type: "POST"
-            url: "/icecream/products"
-            async: true
-            cache: false
-            timeout: 50000
-
-            success: (data) ->
-                raw_products = JSON.parse data
-                _.each raw_products, (item) -> products.create(item)
-            error: (XMLHttpRequest, textStatus, errorThrown) ->
-                alert ["/icecream/products", textStatus, textStatus, errorThrown]
-        )
-
-    refresh = ->
-        $('.products').empty()
-        products.each (element) ->
-            parsed_json = JSON.parse(JSON.stringify element)
-            console.log "adding"
-            console.log parsed_json
-            console.log "adding!"
-            dust.render '/dust/admin_product_item_template', parsed_json, (err, out) ->
-                $('.products').append out
-
 
     initialize()

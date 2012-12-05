@@ -1,12 +1,11 @@
 development:
     sessions:
         default:
-            #uri: mongodb://heroku_app9592846:jaurlg6er732ng6v87hdvb5qqh@ds043987.mongolab.com:43987/heroku_app9592846
-            uri: mongodb://heroku:5689f230fecdad33bf27b0ac5dc82a87@alex.mongohq.com:10044/app9592846
+            uri: mongodb://heroku_app9592846:jaurlg6er732ng6v87hdvb5qqh@ds043987.mongolab.com:43987/heroku_app9592846
+            #uri: mongodb://heroku:5689f230fecdad33bf27b0ac5dc82a87@alex.mongohq.com:10044/app9592846
 
 production:
     sessions:
         default:
-            #uri: mongodb://heroku_app9592846:jaurlg6er732ng6v87hdvb5qqh@ds043987.mongolab.com:43987/heroku_app9592846
-            uri: mongodb://heroku:5689f230fecdad33bf27b0ac5dc82a87@alex.mongohq.com:10044/app9592846
-            #uri: <%= ENV['MONGOLAB_URI'] %>
+            uri: mongodb://heroku_app9592846:jaurlg6er732ng6v87hdvb5qqh@ds043987.mongolab.com:43987/heroku_app9592846
+            #uri: mongodb://heroku:5689f230fecdad33bf27b0ac5dc82a87@alex.mongohq.com:10044/app9592846
