@@ -254,12 +254,12 @@ class FundslingApp < Sinatra::Base
         slim :index, :layout => true
     end
 
-    get '/test' do
+    get '/test/?' do
         slim :test
     end
 
     # cart page, showing all orders
-    get '/cart' do
+    get '/cart/?' do
         unless logged_in?
             purchases = Order.where(user_id: current_user._id).entries
         else
@@ -269,13 +269,13 @@ class FundslingApp < Sinatra::Base
     end
 
     # order detail page
-    get '/orders/:id/detail' do
+    get '/orders/:id/detail/?' do
         valid_order? params[:id] and owner? params[:id]
         slim :order, :layout => true, :locals => {:order_id => params[:id]}
     end
 
     # product detail page
-    get '/products/:id/detail' do
+    get '/products/:id/detail/?' do
         valid_product? params[:id]
         slim :product, :layout => true, :locals => {:product_id => params[:id]}
     end
@@ -283,7 +283,7 @@ class FundslingApp < Sinatra::Base
 # Products
 
     # public read, later there should be distinctions
-    get '/products/:_id' do
+    get '/products/:_id/?' do
         #if request.xhr?
         if not params.key? :_id or params[:_id] == "undefined"
             return JSON.dump Product.desc(:created_at).map! {|x| x.as_document}
@@ -298,7 +298,7 @@ class FundslingApp < Sinatra::Base
 # Orders
 
     # ajax create order
-    get '/orders/create/:product_id' do
+    get '/orders/create/:product_id/?' do
         valid_product?(params[:product_id])
         product = Product.where(_id: params[:product_id]).first
 
@@ -346,7 +346,7 @@ class FundslingApp < Sinatra::Base
     end
 
     # update sorta...
-    post '/handler' do
+    post '/handler/?' do
         handler = $frontend.create_notification_handler
         
         begin
@@ -437,7 +437,7 @@ class FundslingApp < Sinatra::Base
     end
 
     # read one or all
-    get '/orders/:_id' do
+    get '/orders/:_id/?' do
         #if request.xhr?
         if not params.key? :_id or params[:_id] == "undefined"
             if logged_in?
@@ -463,7 +463,7 @@ class FundslingApp < Sinatra::Base
     end
 
     # remove
-    delete '/orders/:_id' do
+    delete '/orders/:_id/?' do
         valid_order?(params[:_id]) and owner? params[:_id]
         
         Order.where(_id: params[:_id]).first.delete
@@ -476,25 +476,25 @@ class FundslingApp < Sinatra::Base
 ## Private pages
 
     # dashboard
-    get '/icecream' do
+    get '/icecream/?' do
         login_required and current_user.admin?
         slim :index, :views => File.dirname(__FILE__) + '/views/admin', :layout => true
     end
 
     # show all orders
-    get '/icecream/orders' do
+    get '/icecream/orders/?' do
         login_required and current_user.admin?
         slim :orders, :views => File.dirname(__FILE__) + '/views/admin', :layout => true
     end
 
     # show all products
-    get '/icecream/products' do
+    get '/icecream/products/?' do
         login_required and current_user.admin?
         slim :products, :views => File.dirname(__FILE__) + '/views/admin', :layout => true
     end
 
     # show all registered users
-    get '/icecream/users' do
+    get '/icecream/users/?' do
         login_required and current_user.admin?
         slim :users, :views => File.dirname(__FILE__) + '/views/admin', :layout => true
     end
@@ -502,7 +502,7 @@ class FundslingApp < Sinatra::Base
 # Orders
 
     # read one or all
-    get '/icecream/orders/:_id' do
+    get '/icecream/orders/:_id/?' do
         login_required and current_user.admin?
 
         #if request.xhr?
@@ -519,7 +519,7 @@ class FundslingApp < Sinatra::Base
     end
 
     # update
-    put '/icecream/orders/:_id' do
+    put '/icecream/orders/:_id/?' do
         login_required and current_user.admin?
         valid_order?(params[:_id])
 
@@ -531,7 +531,7 @@ class FundslingApp < Sinatra::Base
     end
 
     # remove
-    delete '/icecream/orders/:_id' do
+    delete '/icecream/orders/:_id/?' do
         login_required and current_user.admin?
         valid_order?(params[:_id])
         
@@ -544,7 +544,7 @@ class FundslingApp < Sinatra::Base
 # Products
 
     # create
-    post '/icecream/products' do
+    post '/icecream/products/?' do
         login_required and current_user.admin?
         valid_product?(params[:_id])
 
@@ -560,7 +560,7 @@ class FundslingApp < Sinatra::Base
     end
 
     # read one or all
-    get '/icecream/products/:_id' do
+    get '/icecream/products/:_id/?' do
         login_required and current_user.admin?
         valid_product?(params[:_id])
 
@@ -576,7 +576,7 @@ class FundslingApp < Sinatra::Base
     end
 
     # update
-    put '/icecream/products/:_id' do
+    put '/icecream/products/:_id/?' do
         login_required and current_user.admin?
         valid_product?(params[:_id])
 
@@ -588,7 +588,7 @@ class FundslingApp < Sinatra::Base
     end
 
     # remove
-    delete '/icecream/products/:_id' do
+    delete '/icecream/products/:_id/?' do
         login_required and current_user.admin?
         valid_product?(params[:_id])
         
