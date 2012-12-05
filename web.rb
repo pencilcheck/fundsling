@@ -1,5 +1,6 @@
 require 'sinatra/base'
 require 'sinatra/session'
+require 'sinatra/cookies'
 
 require 'slim'
 require 'sass'
@@ -174,6 +175,8 @@ class FundslingApp < Sinatra::Base
     register Sinatra::SinatraAuthentication
     register Sinatra::Session
     register Dust::Sinatra
+
+    helpers Sinatra::Cookies
 
     set :public_folder, File.dirname(__FILE__) + '/public'
     set :views, File.dirname(__FILE__) + '/views'
