@@ -3,11 +3,13 @@ script src="/dust/index_product_item_template.js.dust"
 script src="/coffee/index.coffee"
 link rel="stylesheet" type="text/css" href="/scss/index.scss"
 
+== slim :invite
+
 - if logged_in?
     p <a href="/logout">Logout</a>
 - else
-    / p <a href="/signup">Sign up</a>
-    / p <a href="/login">Login</a>
+    /! p <a href="/signup">Sign up</a>
+    /! p <a href="/login">Login</a>
 
 .category
 bottle

@@ -1,0 +1,28 @@
+<link href="http://fundslings-beta.herokuapp.com/client/betakit.css" rel="stylesheet" type="text/css">
+<div id="betakitSection">
+  <input type="text" id="betakitEmail" placeholder="Email Address" />
+  <input type="button" value="Sign Up" id="betakitButton" />
+  <div id="betakitErrorArea"></div>
+  <script type="text/javascript">
+    var Betakit = Betakit || {};
+    // REQUIRED URL of your Betakit service
+    Betakit.url = "http://fundslings-beta.herokuapp.com";
+
+    // Optional values to customize how the page is shared
+    // I also suggest you add facebook OG tags https://developers.facebook.com/docs/opengraphprotocol/
+    // Betakit.shareUrl = "http://someUrlOtherThanCurrentPage.com";
+    // Betakit.shareTitle = "Product name";
+    // Betakit.shareDescripton = "product description";
+    // Betakit.shareTwitterTemplate = "Default msg for tweeting. {{url}} (via @yournamehere)";
+
+    // Optional values to allow people to "Follow" your team/product. Section will only appear if at least 1 is set
+    //Betakit.facebookName = "ShoeboxApp"; // Your companies Facebook name (facebook.com/YOUR_NAME)
+    //Betakit.twitterUser = "getshoebox"; // Twitter name to follow (@username)
+    //Betakit.rssLink = "http://blog.couchlabs.com/rss";  // link to a RSS feed (usually product blog)
+
+    // Optional setting to hide the referral link section
+    // Betakit.hideReferralLink = true; // Hides the "Referral Link" section on the share screen
+  </script>
+  <!-- REQUIRED: path to your own hosted version of Betakit -->
+  <script src="http://fundslings-beta.herokuapp.com/client/betakit.js" type="text/javascript"></script> 
+</div>
