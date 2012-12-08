@@ -266,7 +266,7 @@ class FundslingApp < Sinatra::Base
 ## Public pages
 
     # public product listing (homepage)
-    get '/' do
+    get '/?' do
         session_start!
         unless logged_in?
             session[:name] = (0...8).map{65.+(rand(26)).chr}.join
