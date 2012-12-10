@@ -447,7 +447,7 @@ class FundslingApp < Sinatra::Base
         # Add an item to the command's shopping cart
         cmd.shopping_cart.create_item do |item|
             item.name = product.name
-            item.quantity = 1
+            item.quantity = params[:purchases]
             item.unit_price = product.unit_price
         end
 
@@ -468,7 +468,7 @@ class FundslingApp < Sinatra::Base
             session_name: session[:name],
             notification_serial_number: response.serial_number, 
             product_id: product._id,
-            quantity: 1
+            quantity: params[:purchases]
         )
         preorder.save!
 

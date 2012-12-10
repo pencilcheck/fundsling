@@ -14,6 +14,7 @@ jQuery ->
         $.ajax(
             type: "POST"
             url: "/orders/create/" + product_id
+            data: {purchases: quantity}
             async: true
             cache: false
             timeout: 50000
