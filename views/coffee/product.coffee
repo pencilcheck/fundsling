@@ -15,7 +15,11 @@ jQuery ->
             type: "GET"
             url: "/orders/create/" + product_id
             data: {purchases: quantity}
-            async: true
-            cache: false
-            timeout: 50000
+
+            success: (data) =>
+                console.log data
+                document.location = data
+
+            error: (XMLHttpRequest, textStatus, errorThrown) ->
+                alert ["/icecream/products", textStatus, textStatus, errorThrown]
         )

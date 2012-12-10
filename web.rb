@@ -462,7 +462,7 @@ class FundslingApp < Sinatra::Base
             response = cmd.send_to_google_checkout
         end
 
-        # TODO:should be created after receiving notification from Google
+        # NOTE: Order will be created after receiving notification from Google
         preorder = PreOrder.new(
             user_id: logged_in? ? current_user._id : nil,
             session_name: session[:name],
@@ -472,8 +472,9 @@ class FundslingApp < Sinatra::Base
         )
         preorder.save!
 
-        # Redirect the user to Google Checkout to complete the transaction
-        redirect response.redirect_url
+        # Return url to redirect the user to Google Checkout 
+        # to complete the transaction
+        response.redirect_url
     end
 
     # update sorta...
