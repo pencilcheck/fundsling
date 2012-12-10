@@ -12,7 +12,7 @@ jQuery ->
         quantity = parseInt($('#quantity').text(), 10)
         product_id = $('.product-showcase').data('product-id')
         $.ajax(
-            type: "POST"
+            type: "GET"
             url: "/orders/create/" + product_id
             data: {purchases: quantity}
             async: true
