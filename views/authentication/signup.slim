@@ -1,23 +1,43 @@
-h1 Sign up
+h2 Start selling today
 
-form action="/signup" method="post"
-    input name="user[session_name]" type="hidden" value="#{session[:name]}"
-    .field
-        .label
-            label for="user_email" Email
-        input id="user_email" name="user[email]" size=10 type="text" value=params[:email]
-    .field
-        .label
-            label for="user_password" Password
-        input id="user_password" name="user[password]" size=30 type="password" value=params[:password]
-    .field
-        .label
-            label for="user_password_confirmation" Password Confirmation
-        input id="user_password_confirmation" name="user[password_confirmation]" size=30 type="password" value=params[:password_confirmation]
-    .field
-        select name="user[permission_level]"
-            option value=-1 Admin
-            option value=1 Authenticated user
+form.form-horizontal action="/signup" method="POST"
+    .control-group
+        .controls
+            input name="user[session_name]" type="hidden" value="#{session[:name]}"
+    .control-group
+        label.control-label.control-label.control-label for="user_email" Email
+        .controls
+            input id="user_email" name="user[email]" size=10 type="text" value=params[:email]
+    .control-group
+        label.control-label for="user_password" Password
+        .controls
+            input id="user_password" name="user[password]" size=30 type="password" value=params[:password]
+    .control-group
+        label.control-label for="user_password_confirmation" Password Confirmation
+        .controls
+            input id="user_password_confirmation" name="user[password_confirmation]" size=30 type="password" value=params[:password_confirmation]
+
+    .control-group
+        label.control-label for="address" Address
+        .controls
+            input id="address_address1" name="address[address1]" size=60 type="text"
+    .control-group
+        .controls
+            input id="address_address2" name="address[address2]" size=60 type="text"
+    .control-group
+        label.control-label for="address" City
+        .controls
+            input id="address_city" name="address[city]" size=60 type="text"
+    .control-group
+        label.control-label for="address" Postal Code
+        .controls
+            input id="address_postal_code" name="address[postal_code]" size=60 type="text"
+
+    .control-group
+        .controls
+            select name="user[permission_level]"
+                option value=-1 Admin
+                option value=1 Authenticated user
     .buttons
-        input value="Sign up" type="submit"
+        button.btn type="submit" Sign up
         a href="/login" Login

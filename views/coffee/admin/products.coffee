@@ -17,10 +17,10 @@ jQuery ->
 
                     success: (data) ->
                         console.log data
-                        options.success data
+                        @options.success data
                     error: (XMLHttpRequest, textStatus, errorThrown) ->
                         alert ["/icecream/products", textStatus, textStatus, errorThrown]
-                        options.error
+                        @options.error XMLHttpRequest, textStatus, errorThrown
                 )
             when "read"
                 console.log "read #{model._id}"
@@ -35,10 +35,10 @@ jQuery ->
                     success: (data) ->
                         data = JSON.parse data
                         console.log data
-                        options.success data
+                        @options.success data
                     error: (XMLHttpRequest, textStatus, errorThrown) ->
                         alert ["/icecream/products", textStatus, textStatus, errorThrown]
-                        options.error
+                        @options.error XMLHttpRequest, textStatus, errorThrown
                 )
             when "update"
                 console.log "update #{model._id}"
@@ -52,10 +52,10 @@ jQuery ->
 
                     success: (data) ->
                         console.log data
-                        options.success data
+                        @options.success data
                     error: (XMLHttpRequest, textStatus, errorThrown) ->
                         alert ["/icecream/products", textStatus, textStatus, errorThrown]
-                        options.error
+                        @options.error XMLHttpRequest, textStatus, errorThrown
                 )
             when "delete"
                 console.log "delete #{model._id}"
@@ -68,10 +68,10 @@ jQuery ->
 
                     success: (data) ->
                         console.log data
-                        options.success data
+                        @options.success data
                     error: (XMLHttpRequest, textStatus, errorThrown) ->
                         alert ["/icecream/products", textStatus, textStatus, errorThrown]
-                        options.error
+                        @options.error XMLHttpRequest, textStatus, errorThrown
                 )
 
     class Product extends Backbone.Model
@@ -125,6 +125,7 @@ jQuery ->
             product_id = $(this).parent().find('#product_id').text().split(' ')[2]
             products.remove [products.find (item) -> item.get("_id") == product_id]
 
+        ###
         $('form#add-product-form').ajaxForm
             beforeSubmit: (arr, $form, options) ->
                 console.log 'add-product-form'
@@ -143,6 +144,7 @@ jQuery ->
                 console.log data
             error: (XMLHttpRequest, textStatus, errorThrown) ->
                 alert ["/icecream/products", textStatus, textStatus, errorThrown]
+        ###
 
         products.fetch()
 

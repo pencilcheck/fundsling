@@ -10,6 +10,8 @@ gem 'sass'
 gem 'coffee-script'
 gem 'dust-sinatra'
 
+gem 'mongoid-paperclip'
+
 gem 'pony'
 
 gem 'google4r-checkout'
@@ -17,6 +19,9 @@ gem 'google4r-checkout'
 gem 'bson_ext'
 gem 'mongo'
 gem 'mongoid'
+
+gem 'binding_of_caller'
+gem 'better_errors'
 
 gem 'encrypted_cookie'
 gem 'rack-flash3'

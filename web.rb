@@ -2,6 +2,9 @@ require 'sinatra/base'
 require 'sinatra/session'
 require 'sinatra/cookies'
 require 'sinatra/reloader'
+require 'better_errors'
+
+require 'mongoid_paperclip'
 
 require 'pony'
 
@@ -121,7 +124,6 @@ class Order
     field :autorization_expiration_date, type: DateTime
 
     embeds_one :order_summary
-    embeds_one :product
 end
 
 class OrderSummary
@@ -140,16 +142,44 @@ end
 class Product
     include Mongoid::Document
     include Mongoid::Timestamps
+    field :user_id, type: Moped::BSON::ObjectId
+    field :session_name, type: String
     field :name, type: String
     field :unit_price, type: Money
     field :description, type: String
     field :number_in_stock, type: Integer
-    field :number_of_purchases, type: Integer
+    field :limit_in_stock, type: Integer
+    field :youtube_link, type: String
+    field :number_of_purchases, type: Integer, default: 0
+    field :public_link_id, type: String, default: (0...6).map{65.+(rand(26)).chr}.join
+
+    embeds_many :pictures, :cascade_callbacks => true
+end
+
+class Picture
+    include Mongoid::Document
+    include Mongoid::Paperclip
+    include Mongoid::Timestamps
+    has_mongoid_attached_file :file,
+        :url            => "/picture/:attachment/:id/:style/:basename.:extension",
+        :path           => "/public/picture/:attachment/:id/:style/:basename.:extension"
+
+    embedded_in :product, :inverse_of => :pictures
 end
 
 # Extending user model in authentication model
 class MongoidUser
     field :session_name, type: String
+    field :address, type: Google4R::Checkout::Address
+    field :session_name, type: String
+
+    def address=(new_address)
+        self.address = Google4R::Checkout::Address.new
+        self.address.address1 = new_address[:address1]
+        self.address.address2 = new_address[:address2]
+        self.address.city = new_address[:city]
+        self.address.postal_code = new_address[:postal_code]
+    end
 end
 
 class SassHandler < Sinatra::Base
@@ -187,6 +217,7 @@ end
 class FundslingApp < Sinatra::Base
     configure do
         Dust.config.template_root = File.expand_path('../views/dust/', __FILE__)
+        BetterErrors.application_root = File.expand_path("..", __FILE__)
         register Sinatra::SinatraAuthentication
         register Sinatra::Session
         register Dust::Sinatra
@@ -226,24 +257,51 @@ class FundslingApp < Sinatra::Base
     use CoffeeHandler
     use DustHandler
 
+    use BetterErrors::Middleware
     use Rack::Session::EncryptedCookie, :secret => 'A1 sauce 1s so good you should use 1t on a11 yr st34ksssss'
     use Rack::Flash
 
     # Local helpers
     helpers do
+        def make_paperclip_mash(file_hash)
+            mash = Mash.new
+            mash['tempfile'] = file_hash[:tempfile]
+            mash['filename'] = file_hash[:filename]
+            mash['content_type'] = file_hash[:type]
+            mash['size'] = file_hash[:tempfile].size
+            mash
+        end
+
         def valid_order?(order_id)
-            order = Order.where(_id: order_id)
-            unless order
+            unless Order.where(_id: order_id).exists?
                 flash[:error] = "Sorry, no order found."
-                redirect back 
+                unless back.nil?
+                    redirect back
+                else
+                    redirect '/'
+                end
             end
         end
 
         def valid_product?(product_id)
-            product = Product.where(_id: product_id)
-            unless product
+            unless Product.where(_id: product_id).exists?
                 flash[:error] = "Sorry, no product found."
-                redirect back 
+                unless back.nil?
+                    redirect back
+                else
+                    redirect '/'
+                end
+            end
+        end
+
+        def valid_public_link_id?(link_id)
+            unless Product.where(public_link_id: link_id).exists?
+                flash[:error] = "Sorry, no product found."
+                unless back.nil?
+                    redirect back
+                else
+                    redirect '/'
+                end
             end
         end
 
@@ -263,48 +321,99 @@ class FundslingApp < Sinatra::Base
         end
     end
 
+    before do
+        unless session?
+            session_start! 
+            unless logged_in?
+                session[:name] = (0...8).map{65.+(rand(26)).chr}.join
+            else
+                session[:name] = current_user.session_name
+            end
+        end
+    end
+
 ## Public pages
 
     # public product listing (homepage)
+    # product landing page too
     get '/?' do
-        session_start!
-        unless logged_in?
-            session[:name] = (0...8).map{65.+(rand(26)).chr}.join
+        if params.flatten.empty?
+            slim :index, :layout => true
         else
-            session[:name] = current_user.session_name
+            valid_public_link_id? params.flatten[0]
+            product = Product.where(public_link_id: params.flatten[0])
+            slim :product, :layout => true, :locals => {:product => product}
         end
-        slim :index, :layout => true
     end
 
-    get '/test/?' do
-        slim :test
+    get '/invite/?' do
+        slim :invite, :layout => true
+    end
+
+    # create product page
+    get '/power/?' do
+        slim :power, :layout => true
     end
 
     # cart page, showing all orders
+    # or order detail page
     get '/cart/?' do
-        unless logged_in?
-            purchases = Order.where(user_id: current_user._id).entries
+        if params.flatten.empty?
+            unless logged_in?
+                purchases = Order.where(user_id: current_user._id).entries
+            else
+                purchases = Order.where(session_name: session[:name]).entries
+            end
+            slim :cart, :layout => true, :locals => {:purchases => purchases}
         else
-            purchases = Order.where(session_name: session[:name]).entries
+            valid_order? params.flatten[0]
+            order = Order.where(_id: params.flatten[0])
+            slim :order, :layout => true, :locals => {:order => order}
         end
-        slim :cart, :layout => true, :locals => {:purchases => purchases}
-    end
 
-    # order detail page
-    get '/orders/:id/detail/?' do
-        valid_order? params[:id] and owner? params[:id]
-        slim :order, :layout => true, :locals => {:order_id => params[:id]}
-    end
-
-    # product detail page
-    get '/products/:id/detail/?' do
-        valid_product? params[:id]
-        slim :product, :layout => true, :locals => {:product_id => params[:id]}
     end
 
 # Products
 
-    # public read, later there should be distinctions
+    # ajax create
+    post '/products/?' do
+        puts params.inspect
+
+        product = Product.new(
+            user_id: logged_in? ? current_user._id : nil,
+            session_name: session[:name],
+            name: params[:name],
+            description: params[:description],
+            unit_price: Money.parse("$" + params[:unit_price]),
+            number_in_stock: params[:number_in_stock].to_i,
+            limit_in_stock: params[:limit_in_stock].to_i,
+            youtube_link: params[:youtube_link],
+            number_of_purchases: 0
+        )
+
+        product.save
+
+        if params.has_key? :file
+            tmpfile = params[:file][:tempfile]
+            name = params[:file][:filename]
+
+            puts "has attachments"
+            product.update_attributes(pictures: 
+                    [Picture.new(:file => make_paperclip_mash(params[:file]))])
+            product.save
+        end
+
+=begin
+        Pony.mail :to => '',
+                  :from => 'support@power.com',
+                  :subject => 'Welcome to Power!',
+                  :body => slim("email/product_created".to_sym)
+=end
+
+        product.as_document.to_json
+    end
+
+    # ajax read, later there should be distinctions
     get '/products/:_id/?' do
         #if request.xhr?
         if not params.key? :_id or params[:_id] == "undefined"
@@ -566,6 +675,7 @@ class FundslingApp < Sinatra::Base
 # Products
 
     # create
+=begin
     post '/icecream/products/?' do
         login_required and current_user.admin?
         valid_product?(params[:_id])
@@ -580,6 +690,7 @@ class FundslingApp < Sinatra::Base
 
         product.as_document.to_json
     end
+=end
 
     # read one or all
     get '/icecream/products/:_id/?' do

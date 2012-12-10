@@ -1,14 +1,25 @@
-h1 Login
+scss:
+    .form-login {
+        max-width: 300px;
+        padding: 19px 29px 29px;
+        margin: 0 auto 20px;
+        background-color: white;
+        border: 1px solid #E5E5E5;
+        -webkit-border-radius: 5px;
+        border-radius: 5px;
+        -webkit-box-shadow: 0 1px 2px;
+        box-shadow: 0 1px 2px;
+    }
 
-form action="/login" method="post"
-    .field
-        .label
-            label for="user_email" Email
-        input id="user_email" name="email" size=10 type="text" value=params[:email]
-    .field
-        .label
-            label for="user_password" Password
-        input id="user_password" name="password" size=30 type="password" value=params[:password]
+form.form-login action="/login" method="post"
+    .control-group
+        label.control-label for="user_email" Email
+        .controls
+            input id="user_email" name="email" size=10 type="text" value=params[:email]
+    .control-group
+        label.control-label for="user_password" Password
+        .controls
+            input id="user_password" name="password" size=30 type="password" value=params[:password]
     .buttons
-        input value="Login" type="submit"
+        button.btn type="submit" Login
         a href="/signup" Sign up
