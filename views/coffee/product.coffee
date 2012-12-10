@@ -18,9 +18,4 @@ jQuery ->
             async: true
             cache: false
             timeout: 50000
-
-            success: (data) ->
-                data = JSON.parse data
-                console.log data
-            error: (XMLHttpRequest, textStatus, errorThrown) ->
-                alert ["/icecream/products", textStatus, textStatus, errorThrown]
+        )
