@@ -1,4 +1,23 @@
 script src="/coffee/product.coffee"
 link rel="stylesheet" type="text/css" href="/scss/product.scss"
 
-h1 Product page
+.product-showcase data-product-id="#{product._id}"
+    .row
+        .span6
+            img src="/js/holder.js/400x300"
+        .span6
+            h2= product.name
+            h3 $#{product.unit_price} if <u>#{product.limit_in_stock - product.number_of_purchases}</u> more units sold.
+            .btn-toolbar
+                .btn-group
+                    button#minus.btn.btn-large.btn-primary -
+                    button.btn.btn-large.btn-primary <span id="quantity">1</span>
+                    button#plus.btn.btn-large.btn-primary +
+                .btn-group
+                    button#purchase.btn.btn-large.btn-primary Purchase
+            small style="margin-left: 55px;" Units
+    .row
+        .span12
+            .description
+                p= product.description
+

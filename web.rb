@@ -151,7 +151,7 @@ class Product
     field :limit_in_stock, type: Integer
     field :youtube_link, type: String
     field :number_of_purchases, type: Integer, default: 0
-    field :public_link_id, type: String, default: (0...6).map{65.+(rand(26)).chr}.join
+    field :public_link_id, type: String
 
     embeds_many :pictures, :cascade_callbacks => true
 end
@@ -341,7 +341,7 @@ class FundslingApp < Sinatra::Base
             slim :index, :layout => true
         else
             valid_public_link_id? params.flatten[0]
-            product = Product.where(public_link_id: params.flatten[0])
+            product = Product.where(public_link_id: params.flatten[0]).first
             slim :product, :layout => true, :locals => {:product => product}
         end
     end
@@ -388,9 +388,9 @@ class FundslingApp < Sinatra::Base
             number_in_stock: params[:number_in_stock].to_i,
             limit_in_stock: params[:limit_in_stock].to_i,
             youtube_link: params[:youtube_link],
-            number_of_purchases: 0
+            number_of_purchases: 0,
+            public_link_id: (0...6).map{65.+(rand(26)).chr}.join
         )
-
         product.save
 
         if params.has_key? :file

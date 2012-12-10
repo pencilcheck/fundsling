@@ -3,6 +3,7 @@ html
     head
         title Fundsling
 
+        == slim :scripts
         == slim :styles
 
         link rel="stylesheet" type="text/css" href="/scss/admin/layout.scss"
@@ -12,4 +13,3 @@ html
             p= flash[:notice]
             p= flash[:error]
             == yield
-            == slim :scripts
