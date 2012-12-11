@@ -459,6 +459,8 @@ class FundslingApp < Sinatra::Base
             # Because of this, it's a good idea to catch Net::HTTPServerError
             # and retry.
 
+            puts 'error occurred when sending to google checkout, trying again'
+            puts e
             response = cmd.send_to_google_checkout
         end
 
