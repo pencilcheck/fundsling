@@ -481,6 +481,7 @@ class FundslingApp < Sinatra::Base
     post '/handler/?' do
         handler = $frontend.create_notification_handler
         
+        puts 'received an notification'
         begin
             notification = handler.handle(request.raw_post)
         rescue Google4R::Checkout::UnknownNotificationType
@@ -491,6 +492,7 @@ class FundslingApp < Sinatra::Base
         case notification
         when Google4R::Checkout::NewOrderNotification
 
+            puts 'new order notification'
             PreOrder.find_by(
                     notification_serial_number: notification.serial_number) do |preorder|
                 product = Product.where(_id: preorder.product_id)
@@ -520,6 +522,7 @@ class FundslingApp < Sinatra::Base
 
         when Google4R::Checkout::OrderStateChangeNotification
 
+            puts 'order state change notification'
             PreOrder.find_by(
                     notification_serial_number: notification.serial_number) do |preorder|
                 product = Product.where(_id: preorder.product_id)
@@ -540,6 +543,7 @@ class FundslingApp < Sinatra::Base
 
         when Google4R::Checkout::AuthorizationAmountNotification 
 
+            puts 'authorization amount notification'
             PreOrder.find_by(
                     notification_serial_number: notification.serial_number) do |preorder|
                 product = Product.where(_id: preorder.product_id)
@@ -554,6 +558,7 @@ class FundslingApp < Sinatra::Base
                 # ready to charge :)
                 if product.number_in_stock == 0
                     # time to charge!
+                    puts 'should charge here'
                 end
 
             end

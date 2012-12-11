@@ -20,6 +20,18 @@ body {
     /*filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#333333', endColorstr='#222222', GradientType=0);*/
 /*}*/
 
+img.frame {
+    padding: 5px;
+    border: solid 1px #EFEFEF;
+}
+
+img.frame:hover {
+    border: solid 1px #CCC;
+    -moz-box-shadow: 1px 1px 5px #999;
+    -webkit-box-shadow: 1px 1px 5px #999;
+    box-shadow: 1px 1px 5px #999;
+}
+
 // Grays
 // -------------------------
 $black:                 #000;

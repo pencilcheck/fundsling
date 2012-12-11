@@ -4,7 +4,7 @@ link rel="stylesheet" type="text/css" href="/scss/product.scss"
 .product-showcase data-product-id="#{product._id}"
     .row
         .span6
-            img src="/js/holder.js/400x300"
+            img.frame src="/js/holder.js/400x300"
         .span6
             h2= product.name
             h3 $#{product.unit_price} if <u>#{product.limit_in_stock - product.number_of_purchases}</u> more units sold.
