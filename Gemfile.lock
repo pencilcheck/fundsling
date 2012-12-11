@@ -65,6 +65,7 @@ GEM
     google4r-checkout (1.1.6)
       money (>= 2.3.0)
     i18n (0.6.1)
+    kgio (2.7.2)
     mail (2.5.3)
       i18n (>= 0.4.0)
       mime-types (~> 1.16)
@@ -101,6 +102,7 @@ GEM
       rack
     rack-test (0.6.2)
       rack (>= 1.0)
+    raindrops (0.8.0)
     rufus-tokyo (1.0.7)
     sass (3.2.3)
     sinatra (1.3.3)
@@ -131,6 +133,10 @@ GEM
       polyglot
       polyglot (>= 0.3.1)
     tzinfo (0.3.35)
+    unicorn (4.2.0)
+      kgio (~> 2.6)
+      rack
+      raindrops (~> 0.7)
     yajl-ruby (1.1.0)
 
 PLATFORMS
@@ -156,3 +162,4 @@ DEPENDENCIES
   sinatra-session
   slim
   thin
+  unicorn
