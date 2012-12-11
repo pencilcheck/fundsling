@@ -3,6 +3,7 @@ html
     head
         title Fundsling
 
+        meta name="viewport" content="width=device-width, initial-scale=1.0"
         == slim :scripts
         == slim :styles
 
@@ -10,15 +11,18 @@ html
         link rel="stylesheet" type="text/css" href="/css/reveal.css"
 
     body
-        .navbar
-            .navbar-inner
-                .container
-                    a.brand href="/": img width="150px" src="/img/logo.png"
-                    ul.nav.pull-right
-                        li: a href="/signup" Register
-                        li: a href="/login" Login
-                        
-        .container
-            p= flash[:notice]
-            p= flash[:error]
-            == yield
+        #wrap
+            .navbar
+                .navbar-inner
+                    .container
+                        a.brand href="/": img width="150px" src="/img/logo.png"
+                        ul.nav.pull-right
+                            li: a href="/signup" Register
+                            li: a href="/login" Login
+                            
+            .container
+                p= flash[:notice]
+                p= flash[:error]
+                == yield
+        #footer
+            == slim :footer

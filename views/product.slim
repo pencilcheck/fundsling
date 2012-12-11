@@ -16,6 +16,10 @@ link rel="stylesheet" type="text/css" href="/scss/product.scss"
                 .btn-group
                     button#purchase.btn.btn-large.btn-primary Purchase
             small style="margin-left: 55px;" Units
+            .row
+                .span6
+                    h3 #{(product.deadline.to_date - DateTime.now.to_date).to_i}
+                    | days left
     .row
         .span12
             .description

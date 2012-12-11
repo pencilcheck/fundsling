@@ -4,6 +4,8 @@ require 'sinatra/cookies'
 require 'sinatra/reloader'
 require 'better_errors'
 
+require 'date'
+
 require 'mongoid_paperclip'
 
 require 'pony'
@@ -149,6 +151,7 @@ class Product
     field :description, type: String
     field :number_in_stock, type: Integer
     field :limit_in_stock, type: Integer
+    field :deadline, type: DateTime, default: DateTime.now
     field :youtube_link, type: String
     field :number_of_purchases, type: Integer, default: 0
     field :public_link_id, type: String
@@ -384,6 +387,7 @@ class FundslingApp < Sinatra::Base
             session_name: session[:name],
             name: params[:name],
             description: params[:description],
+            deadline: DateTime.parse(params[:deadline]),
             unit_price: Money.parse("$" + params[:unit_price]),
             number_in_stock: params[:number_in_stock].to_i,
             limit_in_stock: params[:limit_in_stock].to_i,

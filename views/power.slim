@@ -1,3 +1,6 @@
+script src="/js/datepicker.js"
+link rel="stylesheet" type="text/css" href="/css/datepicker.css"
+
 script src="/coffee/power.coffee"
 link rel="stylesheet" type="text/css" href="/scss/power.scss"
 
@@ -13,6 +16,11 @@ h2 Create your Power! <em>today!</em>
             label.control-label for="description" Description
             .controls
                 textarea cols="140" rows="10" name="description" placeholder="Description" 
+        .control-group
+            label.control-label for="deadline" Deadline (day/month/year)
+            .controls
+                input type="text" data-datepicker-format="dd/mm/yyyy" name="deadline" placeholder="Click me to set date"
+
         .control-group
             label.control-label for="unit_price" Unit price (USD)
             .controls
