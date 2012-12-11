@@ -1,3 +1,4 @@
+require 'sinatra'
 require './web.rb'
 
-FundslingApp.run! :port => ENV['PORT']
+run FundslingApp
