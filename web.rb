@@ -27,7 +27,6 @@ require 'digest/sha1'
 require 'rack-flash'
 require 'sinatra-authentication'
 
-require './test/frontend_configuration'
 require './taxtablefactory'
 
 $stdout.sync = true
@@ -254,6 +253,7 @@ class FundslingApp < Sinatra::Base
 
     set :template_engine, :slim
     set :sinatra_authentication_view_path, File.expand_path('../views/authentication', __FILE__)
+    set :remote_sandbox, true
 
 
     use SassHandler
@@ -444,6 +444,21 @@ class FundslingApp < Sinatra::Base
             flash[:error] = "This product is already full, please try it next time."
             redirect back 
         end
+
+        puts 'frontend'
+        if settings.development?
+            require './test/frontend_configuration'
+        else
+            FRONTEND_CONFIGURATION =
+            {
+                :merchant_id => settings.remote_sandbox ? ENV['SANDBOX_GOOGLE_CHECKOUT_ID'] : ENV['PRODUCTION_GOOGLE_CHECKOUT_ID'],
+                :merchant_key => settings.remote_sandbox ? ENV['SANDBOX_GOOGLE_CHECKOUT_KEY'] : ENV['PRODUCTION_GOOGLE_CHECKOUT_KEY'],
+                :use_sandbox => settings.remote_sandbox
+            }
+        end
+        $frontend = Google4R::Checkout::Frontend.new(FRONTEND_CONFIGURATION)
+        $frontend.tax_table_factory = TaxTableFactory.new
+
         
         # Create a new checkout command (to place an order)
         cmd = $frontend.create_checkout_command
@@ -742,10 +757,6 @@ class FundslingApp < Sinatra::Base
         true
     end
 end
-
-puts 'frontend'
-$frontend = Google4R::Checkout::Frontend.new(FRONTEND_CONFIGURATION)
-$frontend.tax_table_factory = TaxTableFactory.new
 
 puts 'Mongoid'
 Mongoid.load!("config/mongoid.yml")
