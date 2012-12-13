@@ -1,0 +1,54 @@
+script src="/js/dust-core.js"
+script src="/dust/charge_and_ship_form_template.js.dust"
+script src="/coffee/product_status.coffee"
+link rel="stylesheet" type="text/css" href="/scss/product_status.scss"
+
+#alert
+    button type="button" class="close" data-dismiss="alert" &times;
+    #content Test
+
+.product-showcase data-product-id="#{product._id}"
+    .row
+        .span6
+            img.frame src="/js/holder.js/400x300"
+        .span6
+            h2= product.name
+            - if product.ended
+                h3 This product has been sold
+            - else
+                h3 $#{product.listing_price} if <u id="remaining">#{product.maximum_orders - product.number_of_purchases}</u> more units sold.
+            p Orders
+            ul.thumbnails
+                - orders.each do |order|
+                    li.span6= order._id
+            p PreOrders
+            ul.thumbnails
+                - preorders.each do |preorder|
+                    li.span6= preorder._id
+            a.btn.btn-large.btn-primary href="#charge-and-ship-modal" role="button" data-toggle="modal" disabled=product.ended
+                - if product.ended
+                    | Ended
+                - else 
+                    | Already shipped?
+                    
+            .row
+                .span6
+                    h3 #{(product.deadline.to_date - DateTime.now.to_date).to_i}
+                    | days left
+
+/ Modal
+#charge-and-ship-modal.modal.hide.fade tabindex="-1" role="dialog" aria-labelledby="modalHeader" aria-hidden="true"
+    .modal-header
+        button.close type="button" data-dismiss="modal" aria-hidden="true" ×
+        h3#modalHeader Charge and ship your orders here
+    .modal-body
+        p Loading...
+    .modal-footer
+        button.btn data-dismiss="modal" aria-hidden="true" Close
+        button#charge-and-ship.btn.btn-primary type="submit" data-loading-text="Loading ..." Charge and ship all orders
+
+#thankyouModal.reveal-modal
+    h1 Power
+    p Thank you for shipping your product!
+    p We hope you enjoy our services and come back for more products
+    p Thanks again!

@@ -6,6 +6,9 @@ link rel="stylesheet" type="text/css" href="/scss/power.scss"
 
 h2 Create your Power! <em>today!</em>
 
+.alert
+    p <strong>Warning!</strong> Every order can be guaranteed only 7 days of financial fullfilment after it is authorized by Google, after that period you might have to reauthorize the order again with extra fee. Please take this in mind when choosing an appropriate deadline for your product.
+
 .result
     form#add-product-form.form-horizontal action="/products" method="POST" enctype="multipart/form-data"
         .control-group
@@ -25,23 +28,28 @@ h2 Create your Power! <em>today!</em>
             label.control-label for="unit_price" Unit price (USD)
             .controls
                 input name="unit_price" type="text" size=5 placeholder="Unit price"
+
         .control-group
-            label.control-label for="number_in_stock" Lower number of buyers
             .controls
-                input name="number_in_stock" type="text" size=5 placeholder="Min buyers"
+                h2 $<span id="listing_price">0.00</span> <small>What others will see (w/o tax)</small>
+
         .control-group
-            label.control-label for="limit_in_stock" Upper limit of buyers
+            label.control-label for="minimum_orders" Lower number of orders
             .controls
-                input name="limit_in_stock" type="text" size=5 placeholder="Max buyers"
+                input name="minimum_orders" type="text" size=5 placeholder="Min orders"
+        .control-group
+            label.control-label for="maximum_orders" Upper limit of orders
+            .controls
+                input name="maximum_orders" type="text" size=5 placeholder="Max orders"
         .control-group
             label.control-label for="youtube_link" Youtube link
             .controls
                 input name="youtube_link" type="text" size=10 placeholder="Youtube link"
         .control-group
-            label.control-label for="pictures" Photos
+            label.control-label for="picture" Photo
             .controls
                 input name="file" type="file"
-        button.btn type="submit" Submit
+        button.btn type="submit" data-loading-text="Loading ..." Submit
 
 
 #submitModal.reveal-modal
@@ -50,5 +58,5 @@ h2 Create your Power! <em>today!</em>
     p Here is the link to your unique Power! page:
     p: span#public_url
 
-    p Share your link at
-    p Social networks placeholder
+    p Here is the link to your unique Power! management page:
+    p: span#status_url

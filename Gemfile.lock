@@ -91,6 +91,7 @@ GEM
       activesupport (>= 3.0.0)
       cocaine (~> 0.4.0)
       mime-types
+    parallel (0.5.21)
     polyglot (0.3.3)
     pony (1.4)
       mail (> 2.0)
@@ -153,6 +154,7 @@ DEPENDENCIES
   mongo
   mongoid
   mongoid-paperclip
+  parallel
   pony
   rack-flash3
   sass

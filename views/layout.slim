@@ -21,8 +21,14 @@ html
                             li: a href="/login" Login
                             
             .container
-                p= flash[:notice]
-                p= flash[:error]
+                - flash.now.each do |name, msg|
+                    - if msg.is_a?(String)
+                        .alert
+                            button type="button" class="close" data-dismiss="alert" &times;
+                            - if name.to_sym == :notice
+                                <strong>Notice!</strong> #{msg}
+                            - else
+                                <strong>Warning!</strong> #{msg}
                 == yield
         #footer
             == slim :footer

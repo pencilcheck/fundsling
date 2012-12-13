@@ -5,6 +5,7 @@ gem 'sinatra'
 gem 'sinatra-contrib'
 gem 'thin'
 gem 'unicorn'
+gem 'parallel'
 
 gem 'slim'
 gem 'sass'

@@ -1,0 +1,18 @@
+<form id="charge_and_ship_form" class="form-horizontal" action="/chargeandship" method="POST">
+    <input name="product_id" type="hidden" value="{product_id}">
+    {#orders}
+    <fieldset>
+        <legend>{_id}</legend>
+
+        <label>Carrier</label>
+        <input name="carrier_information[{_id}][carrier]" type="text" size=10 placeholder="Carrier">
+
+        <label>Tracking number</label>
+        <input name="carrier_information[{_id}][tracking_number]" type="text" size=20 placeholder="Tracking number">
+
+        <label class="checkbox">
+            <input name="carrier_information[{_id}][email]" type="checkbox" checked="checked"> Email buyer?
+        </label>
+    </fieldset>
+    {/orders}
+</form>

@@ -3,10 +3,9 @@ require 'sinatra/session'
 require 'sinatra/cookies'
 require 'sinatra/reloader'
 require 'better_errors'
+require 'parallel'
 
 require 'date'
-
-require 'mongoid_paperclip'
 
 require 'pony'
 
@@ -19,7 +18,7 @@ require 'google4r/checkout'
 
 require 'mongo'
 require 'mongoid'
-#require 'mongoid_money_field' # don't use it, it will prevent anything else from saving
+require 'mongoid_paperclip'
 
 require 'encrypted_cookie'
 require 'digest/md5'
@@ -27,163 +26,51 @@ require 'digest/sha1'
 require 'rack-flash'
 require 'sinatra-authentication'
 
-require './taxtablefactory'
+require './test/frontend_configuration.rb'
+require './taxtablefactory.rb'
 
-$stdout.sync = true
+
+require './models/mongoize'
+
+require './models/preorder'
+
+require './models/order'
+
+require './models/ordersummary'
+
+require './models/product'
+
+require './models/picture'
+
+require './models/mongoiduser'
 
 # Small helpers
 def get_next_random_product_id
     (0...8).map{65.+(rand(26)).chr}.join
 end
 
-class Money::Currency
+def listing_price_from_raw(raw)
+    ((raw.to_f + 0.3) / (1.0 - 0.03)).round(2)
+end
 
-    def mongoize
-        [self.id]
+def get_frontend
+    puts 'frontend'
+    if settings.development?
+        frontend = Google4R::Checkout::Frontend.new(FRONTEND_CONFIGURATION)
+    else
+        frontend_configuration =
+        {
+            :merchant_id => settings.remote_sandbox ? ENV['SANDBOX_GOOGLE_CHECKOUT_ID'] : ENV['PRODUCTION_GOOGLE_CHECKOUT_ID'],
+            :merchant_key => settings.remote_sandbox ? ENV['SANDBOX_GOOGLE_CHECKOUT_KEY'] : ENV['PRODUCTION_GOOGLE_CHECKOUT_KEY'],
+            :use_sandbox => settings.remote_sandbox
+        }
+        frontend = Google4R::Checkout::Frontend.new(frontend_configuration)
     end
-
-    class << self
-        def demongoize(object)
-            Money::Currency.new(object[0])
-        end
-
-        def mongoize(object)
-            object.mongoize
-        end
-
-        def evolve(object)
-            object.mongoize
-        end
-    end
+    frontend.tax_table_factory = TaxTableFactory.new
+    frontend
 end
 
-class Money
-
-    def mongoize
-        [self.to_s, self.currency.mongoize] # amount and symbol such as :usd
-    end
-
-    class << self
-        def demongoize(object)
-            # turn currency into symbol like $ for USD
-            Money.parse(Money::Currency.demongoize(object[1]).symbol + object[0])
-        end
-
-        def mongoize(object)
-            object.mongoize
-        end
-
-        def evolve(object)
-            object.mongoize
-        end
-    end
-end
-
-class Google4R::Checkout::Address
-
-    def mongoize
-        [self.address1, self.address2, self.company_name, self.contact_name, self.email, self.fax, self.phone, 
-        self.address_id, self.city, self.country_code, self.postal_code, self.region]
-    end
-
-    class << self
-        def demongoize(object)
-            result = Address.new
-            result.address1, result.address2, result.company_name, result.contact_name, result.email, result.fax, result.phone, result.address_id, result.city, result.country_code, result.postal_code, result.region = object
-            result
-        end
-
-        def mongoize(object)
-            object.mongoize
-        end
-
-        def evolve(object)
-            object.mongoize
-        end
-    end
-end
-
-class PreOrder
-    include Mongoid::Document
-    include Mongoid::Timestamps
-    field :user_id, type: Moped::BSON::ObjectId
-    field :session_name, type: String
-    field :notification_serial_number, type: String
-    field :quantity, type: Integer, default: 1
-    field :product_id, type: Moped::BSON::ObjectId
-end
-
-class Order
-    include Mongoid::Document
-    include Mongoid::Timestamps
-    field :preorder_id, type: Moped::BSON::ObjectId
-    field :user_id, type: Moped::BSON::ObjectId
-    field :session_name, type: String
-    field :quantity, type: Integer, default: 1
-
-    field :authorized_amount, type: Money
-    field :autorization_expiration_date, type: DateTime
-
-    embeds_one :order_summary
-end
-
-class OrderSummary
-    include Mongoid::Document
-
-    field :google_order_number, type: String
-    field :buyer_billing_address, type: Google4R::Checkout::Address
-    field :buyer_id, type: String
-    field :buyer_shipping_address, type: Google4R::Checkout::Address
-    field :financial_order_state, type: String
-    field :fulfillment_order_state, type: String
-
-    embedded_in :order
-end
-
-class Product
-    include Mongoid::Document
-    include Mongoid::Timestamps
-    field :user_id, type: Moped::BSON::ObjectId
-    field :session_name, type: String
-    field :name, type: String
-    field :unit_price, type: Money
-    field :description, type: String
-    field :number_in_stock, type: Integer
-    field :limit_in_stock, type: Integer
-    field :deadline, type: DateTime, default: DateTime.now
-    field :youtube_link, type: String
-    field :number_of_purchases, type: Integer, default: 0
-    field :public_link_id, type: String
-
-    embeds_many :pictures, :cascade_callbacks => true
-end
-
-class Picture
-    include Mongoid::Document
-    include Mongoid::Paperclip
-    include Mongoid::Timestamps
-    has_mongoid_attached_file :file,
-        :url            => "/picture/:attachment/:id/:style/:basename.:extension",
-        :path           => "/public/picture/:attachment/:id/:style/:basename.:extension"
-
-    embedded_in :product, :inverse_of => :pictures
-end
-
-# Extending user model in authentication model
-class MongoidUser
-    field :session_name, type: String
-    field :address, type: Google4R::Checkout::Address
-    field :session_name, type: String
-
-    def address=(new_address)
-        self.address = Google4R::Checkout::Address.new
-        self.address.address1 = new_address[:address1]
-        self.address.address2 = new_address[:address2]
-        self.address.city = new_address[:city]
-        self.address.postal_code = new_address[:postal_code]
-    end
-end
-
+# Handlers
 class SassHandler < Sinatra::Base
 
     set :views, File.dirname(__FILE__) + '/views/scss'
@@ -358,6 +245,29 @@ class FundslingApp < Sinatra::Base
         slim :power, :layout => true
     end
 
+    get '/listing_price/?' do
+        JSON.dump({:price => listing_price_from_raw(params[:price])})
+    end
+
+    # product management page
+    get '/products/?' do
+        if params.flatten.empty?
+            slim :index, :layout => true
+        else
+            valid_product? params.flatten[0]
+            begin
+                product = Product.where(_id: params.flatten[0]).first
+                orders = Order.where(product_id: product._id).all
+                preorders = PreOrder.where(product_id: product._id).all
+            rescue => ex
+                product = Product.where(_id: params.flatten[0]).first
+                orders = Order.where(product_id: product._id).all
+                preorders = PreOrder.where(product_id: product._id).all
+            end
+            slim :product_status, :layout => true, :locals => {:preorders => preorders, :orders => orders, :product => product}
+        end
+    end
+
     # cart page, showing all orders
     # or order detail page
     get '/cart/?' do
@@ -389,8 +299,8 @@ class FundslingApp < Sinatra::Base
             description: params[:description],
             deadline: DateTime.parse(params[:deadline]),
             unit_price: Money.parse("$" + params[:unit_price]),
-            number_in_stock: params[:number_in_stock].to_i,
-            limit_in_stock: params[:limit_in_stock].to_i,
+            minimum_orders: params[:minimum_orders].to_i,
+            maximum_orders: params[:maximum_orders].to_i,
             youtube_link: params[:youtube_link],
             number_of_purchases: 0,
             public_link_id: (0...6).map{65.+(rand(26)).chr}.join
@@ -437,36 +347,28 @@ class FundslingApp < Sinatra::Base
         valid_product?(params[:product_id])
         product = Product.where(_id: params[:product_id]).first
 
-        product_ordered = product.number_of_purchases
-        product_in_stock = product.number_in_stock
+        remaining = product.remaining
+        order_quantity = params[:purchases].to_i
 
-        if product_ordered >= product_in_stock
-            flash[:error] = "This product is already full, please try it next time."
-            redirect back 
+        if remaining == 0
+            error = "This product is already full, please try it next time."
+            return JSON.dump({:error => error})
         end
 
-        puts 'frontend'
-        if settings.development?
-            require './test/frontend_configuration'
-        else
-            FRONTEND_CONFIGURATION =
-            {
-                :merchant_id => settings.remote_sandbox ? ENV['SANDBOX_GOOGLE_CHECKOUT_ID'] : ENV['PRODUCTION_GOOGLE_CHECKOUT_ID'],
-                :merchant_key => settings.remote_sandbox ? ENV['SANDBOX_GOOGLE_CHECKOUT_KEY'] : ENV['PRODUCTION_GOOGLE_CHECKOUT_KEY'],
-                :use_sandbox => settings.remote_sandbox
-            }
+        if remaining - order_quantity < 0
+            error = "This product is limited on supply, please order less amount next time."
+            return JSON.dump({:error => error})
         end
-        $frontend = Google4R::Checkout::Frontend.new(FRONTEND_CONFIGURATION)
-        $frontend.tax_table_factory = TaxTableFactory.new
 
+        frontend = get_frontend
         
         # Create a new checkout command (to place an order)
-        cmd = $frontend.create_checkout_command
+        cmd = frontend.create_checkout_command
 
         # Add an item to the command's shopping cart
         cmd.shopping_cart.create_item do |item|
             item.name = product.name
-            item.quantity = params[:purchases]
+            item.quantity = order_quantity
             item.unit_price = product.unit_price
         end
 
@@ -483,24 +385,50 @@ class FundslingApp < Sinatra::Base
             response = cmd.send_to_google_checkout
         end
 
+        return JSON.dump({error: 'Cannot contact Google Checkout'}) unless response
+
         # NOTE: Order will be created after receiving notification from Google
         preorder = PreOrder.new(
             user_id: logged_in? ? current_user._id : nil,
             session_name: session[:name],
             notification_serial_number: response.serial_number, 
-            product_id: product._id,
-            quantity: params[:purchases]
+            quantity: order_quantity,
+            product_id: product._id
         )
-        preorder.save!
+        begin
+            preorder.save!
+        rescue => ex
+            begin
+                preorder.save!
+            rescue => ex
+                puts "#{ex.backtrace}: #{ex.message} (#{ex.class})"
+                return JSON.dump({error: 'Our server cannot process your request right now, please try again later'})
+            end
+        end
+
+        # TODO: need a scheduled job to check whether the preorder is committed in a certain amount of time
+        product.number_of_purchases += order_quantity
+        begin
+            product.save!
+        rescue => ex
+            begin
+                product.save!
+            rescue => ex
+                preorder.delete
+                puts "#{ex.backtrace}: #{ex.message} (#{ex.class})"
+                return JSON.dump({error: 'Our server cannot process your request right now, please try again later'})
+            end
+        end
 
         # Return url to redirect the user to Google Checkout 
         # to complete the transaction
-        response.redirect_url
+        return JSON.dump({url: response.redirect_url})
     end
 
     # update sorta...
     post '/handler/?' do
-        handler = $frontend.create_notification_handler
+        frontend = get_frontend
+        handler = frontend.create_notification_handler
         
         puts 'received an notification'
         begin
@@ -518,15 +446,12 @@ class FundslingApp < Sinatra::Base
                     notification_serial_number: notification.serial_number) do |preorder|
                 product = Product.where(_id: preorder.product_id)
 
-                product.number_in_stock -= 1
-                product.number_of_purchases += 1
-
                 order = Order.new(
-                    preorder_id: preorder._id,
                     user_id: preorder.user_id,
                     session_name: preorder.session_name,
+                    notification_serial_number: notification.serial_number,
                     quantity: preorder.quantity,
-                    product: product
+                    product_id: preorder.product_id
                 )
                 order.order_summary = OrderSummary.new(
                     google_order_number: notification.google_order_number,
@@ -536,54 +461,65 @@ class FundslingApp < Sinatra::Base
                     financial_order_state: notification.financial_order_state,
                     fulfillment_order_state: notification.fulfillment_order_state
                 )
-                order.save
+                
+                begin
+                    order.save
+                rescue => ex
+                    puts "#{ex.backtrace}: #{ex.message} (#{ex.class})"
+                end
 
-                product.save
+                begin
+                    preorder.delete
+                rescue => ex
+                    puts "#{ex.backtrace}: #{ex.message} (#{ex.class})"
+                end
             end
 
         when Google4R::Checkout::OrderStateChangeNotification
 
             puts 'order state change notification'
-            PreOrder.find_by(
-                    notification_serial_number: notification.serial_number) do |preorder|
-                product = Product.where(_id: preorder.product_id)
+            Order.find_by(
+                    notification_serial_number: notification.serial_number) do |order|
+                product = Product.where(_id: order.product_id)
 
-                order = Order.where(preoder_id: preorder._id)
-
-                order.order_summary.financial_order_state = notification.new_finantial_order_state
-                order.save
                 if notification.new_finantial_order_state == 
                         Google4R::Checkout::FinancialOrderState::CANCELLED
                     order.delete
 
-                    product.number_in_stock += 1
                     product.number_of_purchases -= 1
-                    product.save
+                    begin
+                        product.save
+                    rescue => ex
+                        puts "#{ex.backtrace}: #{ex.message} (#{ex.class})"
+                    end
+                else
+                    order.order_summary.financial_order_state = notification.new_finantial_order_state
+                    begin
+                        order.save
+                    rescue => ex
+                        puts "#{ex.backtrace}: #{ex.message} (#{ex.class})"
+                    end
                 end
             end
 
         when Google4R::Checkout::AuthorizationAmountNotification 
 
             puts 'authorization amount notification'
-            PreOrder.find_by(
-                    notification_serial_number: notification.serial_number) do |preorder|
-                product = Product.where(_id: preorder.product_id)
-
-                order = Order.where(preoder_id: preorder._id)
+            Order.find_by(
+                    notification_serial_number: notification.serial_number) do |order|
+                product = Product.where(_id: order.product_id)
 
                 order.authorization_amount = notification.authorization_amount
                 order.authorization_expiration_date = 
                     notification.authorization_expiration_date
-                order.save
-
-                # ready to charge :)
-                if product.number_in_stock == 0
-                    # time to charge!
-                    puts 'should charge here'
+                begin
+                    order.save
+                rescue => ex
+                    puts "#{ex.backtrace}: #{ex.message} (#{ex.class})"
                 end
-
             end
 
+            # TODO: Notify the producers if the number of orders exceeds minimum number and it is before the deadline
         else
             puts 'no'
         end
@@ -592,6 +528,54 @@ class FundslingApp < Sinatra::Base
 
         content_type 'text/xml'
         notification_acknowledgement.to_xml
+    end
+
+    post '/chargeandship/?' do
+        orders = Order.where(product_id: params[:product_id]).all
+        frontend = get_frontend
+        carrier_information = params[:carrier_information]
+
+        puts carrier_information
+
+=begin
+        Parallel.map(orders, :in_threads => 3) do |order|
+            email = carrier_information[order._id][:email]
+            carrier = carrier_information[order._id][:carrier]
+            tracking_number = carrier_information[order._id][:tracking_number]
+
+            # Create a new charge and ship command (to charge and ship an order)
+            cmd = frontend.create_charge_and_ship_order_command
+
+            # Google order number
+            cmd.google_order_number = order.order_summary.google_order_number
+
+            # Whether to send email to buyers
+            cmd.send_email = email
+
+            # Carrier and tracking number information
+            cmd.carrier = carrier
+            cmd.tracking_number = tracking_number
+
+            # Send the command to Google and capture the HTTP response
+            begin
+                response = cmd.send_to_google_checkout
+            rescue Net::HTTPServerError => e
+                # Sometimes Google Checkout is unavailable for internal reasons.
+                # Because of this, it's a good idea to catch Net::HTTPServerError
+                # and retry.
+
+                puts 'error occurred when sending to google checkout, trying again'
+                puts e
+                response = cmd.send_to_google_checkout
+            end
+        end
+
+        # if all success
+        product = Product.where(_id: params[:product_id]).first
+        product.charged = true
+        product.shipped = true
+        product.save!
+=end
     end
 
     # read one or all
@@ -618,6 +602,35 @@ class FundslingApp < Sinatra::Base
                 order.as_document.to_json
             end
         end
+    end
+
+    # read all orders for a particular product
+    post '/orders/products/:product_id/?' do
+        valid_product? params[:product_id]
+
+        puts "checking orders for product id #{params[:product_id]}"
+
+        if logged_in?
+            if Product.where(_id: params[:product_id]).first.user_id == current_user._id
+                begin
+                    return JSON.dump Order.where(product_id: params[:product_id]).desc(:created_at).map! {|x| x.as_document}
+                rescue => ex
+                    puts "#{ex.backtrace}: #{ex.message} (#{ex.class})"
+                    return JSON.dump({error: 'Our server cannot process your request right now, please try again later'})
+                end
+            end
+        else
+            puts "return orders"
+            begin
+                # we don't check credentials here now
+                return JSON.dump Order.where(product_id: params[:product_id]).desc(:created_at).map! {|x| x.as_document}
+            rescue => ex
+                puts "#{ex.backtrace}: #{ex.message} (#{ex.class})"
+                return JSON.dump({error: 'Our server cannot process your request right now, please try again later'})
+            end
+        end
+
+        JSON.dump({error: 'Sorry, we cannot process your request'})
     end
 
     # remove
@@ -710,7 +723,7 @@ class FundslingApp < Sinatra::Base
         product = Product.new(
             name: params[:name],
             unit_price: Money.parse("$" + params[:unit_price]),
-            number_in_stock: params[:number_in_stock].to_i,
+            minimum_orders: params[:minimum_orders].to_i,
             number_of_purchases: 0
         )
         product.save
@@ -762,6 +775,7 @@ puts 'Mongoid'
 Mongoid.load!("config/mongoid.yml")
 
 
+$stdout.sync = true
 if __FILE__ == $0
     FundslingApp.run! :port => ENV['PORT']
 end
