@@ -568,12 +568,18 @@ class FundslingApp < Sinatra::Base
                 puts e
                 response = cmd.send_to_google_checkout
             end
+
+            if response.class == "ChargeAmountNotification"
+                # success
+                order.charged = true
+                order.save!
+            end
         end
 
         # if all success
         product = Product.where(_id: params[:product_id]).first
-        product.charged = true
-        product.shipped = true
+        product.charged_all = true
+        product.shipped_all = true
         product.save!
 =end
     end

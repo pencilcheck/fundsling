@@ -12,15 +12,15 @@ class Product
     field :youtube_link, type: String
     field :number_of_purchases, type: Integer, default: 0
     field :public_link_id, type: String
-    field :charged, type: Boolean, default: false # in other words, capture funds
-    field :shipped, type: Boolean, default: false
+    field :charged_all, type: Boolean, default: false # in other words, capture funds
+    field :shipped_all, type: Boolean, default: false
 
     def remaining
         self.maximum_orders - self.number_of_purchases
     end
 
     def ended
-        self.charged and self.shipped
+        self.charged_all and self.shipped_all
     end
 
     def listing_price

@@ -11,6 +11,8 @@ class Order
     field :authorized_amount, type: Money
     field :autorization_expiration_date, type: DateTime
 
+    field :charged, type: Boolean, default: false
+
     embeds_one :order_summary
 end
 
